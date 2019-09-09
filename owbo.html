@@ -1,0 +1,323 @@
+
+<html>
+  <head>
+  </head>
+  <body>
+    <div id="functions">
+    <a href="javascript: save();">save</a> 
+    Load: <input type="file" id="file-input" />
+    </div>
+    <div id="owbo_board" style="width: 100%; height: 100vh"></div>
+    <script>
+    // TODO:
+    //   - delete properties when deleting classes (use class IDs for recording the presence of properties in existing properties, rather than coordinates, and use that as IDs for props) 
+    //   - drag classes    
+    //   - osrt out case when property from class pointing to itself
+    //   - "type isa, subClassOf or sco" to create a subclass property
+    //   - save into rdfs (in nt)
+    //   - change color of classes, property links (individually)
+    //   - prefix setting box
+    //   - adsoSearch for classes
+// base
+    var events = []
+var classColour = "#ddd"
+var classStroke =  "stroke-width: 0px; stroke: black"
+var litColour = "#fff"
+var litStroke =  "stroke-width: 1px; stroke: #aaa"
+const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+svg.setAttribute("width", "100%")
+svg.setAttribute("height", "100%")
+svg.onclick = function() {svg_clicked()};
+(function() {
+    document.getElementById("owbo_board").appendChild(svg);
+    document.getElementById('file-input')
+	.addEventListener('change', load, false);
+})();
+
+// variables
+var creating_prop = false;
+var prop_origin = undefined;
+var pcount=0;
+var clcount=0;
+var existingProp = {}
+
+// events
+function svg_clicked(){
+    if (events.length>0 && events[events.length-1].type=="click" && (new Date().getTime() - events[events.length-1].time) < 200){
+	console.log("event already dealt with")
+    } else {
+	if (creating_prop) {
+	    creating_prop = false
+	    document.getElementById("prop_cr_message").remove()
+	} else {
+	    const mx = event.clientX
+	    const my = event.clientY
+	    addClass(mx,my)
+	}
+    }
+}
+function class_clicked(el){				      
+    if (events.length>0 && events[events.length-1].type=="click" && (new Date().getTime() - events[events.length-1].time) < 200){
+	console.log("event already dealt with")
+    } else {
+        events.push({type: "click", caughtby: "class__clicked", time: new Date().getTime()})
+	if (creating_prop){
+	    creating_prop = false
+	    document.getElementById("prop_cr_message").remove()
+	    var x1 = parseFloat(prop_origin.getAttribute("cx"))
+	    var y1 = parseFloat(prop_origin.getAttribute("cy"))
+	    var x2 = parseFloat(el.getAttribute("cx"))
+	    var y2 = parseFloat(el.getAttribute("cy"))
+	    addProperty(x1,y1,x2,y2)
+	} else {
+	    creating_prop = true
+	    prop_origin = el
+	    const txt = document.createElement("div")
+	    txt.setAttribute("style", "position:fixed; bottom: 20px; left:20%; text-align: center; width: 60%;")
+	    txt.setAttribute("id","prop_cr_message")
+	    txt.innerHTML="Creating a property: Select the destination class"
+	    document.getElementsByTagName("BODY")[0].appendChild(txt);
+	}
+    }
+}
+function class_name_clicked(el){
+    events.push({type: "click", caughtby: "class_name_clicked", time: new Date().getTime()})
+    changeClassName(el, el.innerHTML)
+}
+function property_name_clicked(el){
+    events.push({type: "click", caughtby: "property_name_clicked", time: new Date().getTime()})
+    changePropertyName(el, el.innerHTML)
+}
+function save() {
+    events.push({type: "click", caughtby: "save", time: new Date().getTime()})
+    var data = svg.innerHTML    
+    var file = new Blob([data], {type: "text/plain"});
+    var filename = "onto.svg"
+    if (window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    } else { 
+        var a = document.createElement("a"),
+            url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
+function load(e){
+    var file = e.target.files[0];
+    if (!file) {
+	return;
+  }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var contents = e.target.result;
+	document.getElementsByTagName("svg")[0].innerHTML=contents;
+    };
+    reader.readAsText(file);
+}
+// changing model
+function addClass(mx,my){
+    const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
+    clg.setAttribute("id", "class_"+(clcount++))  
+    const clcir = document.createElementNS("http://www.w3.org/2000/svg", "ellipse")
+    clcir.setAttribute("cx", mx)
+    clcir.setAttribute("cy", my)
+    clcir.setAttribute("rx", "60")
+    clcir.setAttribute("ry", "30")
+    clcir.setAttribute("fill", classColour)
+    clcir.setAttribute("style", classStroke)    
+    clcir.setAttribute("class", "owbo_class")
+    clcir.onclick = function() {class_clicked(this);}
+    clg.appendChild(clcir)
+    const cltext = document.createElementNS("http://www.w3.org/2000/svg", "text")
+    clname = "New Class"
+    cltext.innerHTML="New Class"
+    cltext.setAttribute("x", mx)
+    cltext.setAttribute("y", my)
+    clg.appendChild(cltext)
+    svg.appendChild(clg)
+    var cltl = cltext.getBBox().width
+    var clth = cltext.getBBox().height      
+    cltext.setAttribute("x", mx-(cltl/2))
+    cltext.setAttribute("y", my+(clth/4))
+    cltext.setAttribute("class", "owbo_class_name")
+    cltext.onclick = function() {class_name_clicked(this)}
+    changeClassName(cltext, undefined)
+}
+function addProperty(x1,y1,x2,y2){
+    const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
+    pg.setAttribute("id", "property_"+(pcount++))  
+    var mx = (x1+x2)/2
+    var my = (y1+y2)/2
+    var label = Math.max(x1,x2)+" "+Math.max(y1,y2)+" "+Math.min(x1,x2)+" "+Math.min(y1,y2)
+    var l = Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2))
+    var cosa = (x2-x1)/l
+    var sina = (y2-y1)/l    
+    if (!existingProp[label])
+	existingProp[label] = 1
+    else
+	existingProp[label]++
+    var sign = 1
+    if (existingProp[label]%2==0) sign = -1
+    var increment = 20*Math.floor(existingProp[label]/2)
+    if (Math.abs(cosa)>Math.abs(sina)) my += sign*increment
+    else mx += sign*increment
+    const pline11 = document.createElementNS("http://www.w3.org/2000/svg", "line")
+    pline11.setAttribute("x1", x1)
+    pline11.setAttribute("y1", y1)
+    pline11.setAttribute("x2", mx)
+    pline11.setAttribute("y2", my)
+    pline11.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pg.appendChild(pline11)
+    const pline12 = document.createElementNS("http://www.w3.org/2000/svg", "line")
+    pline12.setAttribute("x1", mx)
+    pline12.setAttribute("y1", my)
+    pline12.setAttribute("x2", x2)
+    pline12.setAttribute("y2", y2)
+    pline12.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pg.appendChild(pline12)    
+    console.log(mx+" "+my+" "+l+" "+cosa+" "+sina)
+    const pline2 = document.createElementNS("http://www.w3.org/2000/svg", "line")
+    pline2.setAttribute("x1", mx)
+    pline2.setAttribute("y1", my)
+    pline2.setAttribute("x2", mx+((cosa*-10)-(sina*-5)))
+    pline2.setAttribute("y2", my+((cosa*-5)-(sina*10)))
+    pline2.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pg.appendChild(pline2)
+    const pline3 = document.createElementNS("http://www.w3.org/2000/svg", "line")
+    pline3.setAttribute("x1", mx)
+    pline3.setAttribute("y1", my)
+    pline3.setAttribute("x2", mx+((cosa*-10)-(sina*+5)))
+    pline3.setAttribute("y2", my+((cosa*+5)-(sina*10)))
+    pline3.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pg.appendChild(pline3)
+    const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")
+    ptext.innerHTML="New Property"
+    ptext.setAttribute("x", mx-10)
+    ptext.setAttribute("y", my-10)
+    pg.appendChild(ptext)
+    svg.insertBefore(pg, svg.childNodes[0])
+    var cltl = ptext.getBBox().width
+    var clth = ptext.getBBox().height      
+    ptext.setAttribute("x", mx-10-(cltl/2))
+    ptext.setAttribute("y", my-10+(clth/4))
+	    ptext.setAttribute("class", "owbo_property_name")
+    ptext.onclick = function() {property_name_clicked(this)}
+    changePropertyName(ptext, undefined)	    
+}
+function changeClassName(el, v){
+    var diags = document.getElementsByClassName('diag')
+    if (diags.length!=0) diags[0].remove()
+    const body = document.getElementsByTagName("BODY")[0]
+    const ndiv = document.createElement("div")
+    const pp = el.parentNode    
+    ndiv.setAttribute("style", "position:fixed; top: 100px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
+    ndiv.setAttribute("id", "diag_n_"+pp.id)
+    ndiv.setAttribute("class", "diag")    
+    const inputtext = document.createElement("input")
+    inputtext.setAttribute("type", "text")
+    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;")
+    inputtext.setAttribute("placeholder", "class name")
+    if (v){
+	inputtext.setAttribute("value", v)
+    }
+    inputtext.onchange = function() {
+	var newname = this.value
+	var isLiteral = false
+	if (newname.toLowerCase()=="string" || newname.toLowerCase()=="str"){
+	    newname="string"
+	    isLiteral=true
+	}
+	if (newname.toLowerCase()=="integer" || newname.toLowerCase()=="int"){
+	    newname="integer"
+	    isLiteral=true	    
+	}
+	if (newname.toLowerCase()=="float" || newname.toLowerCase()=="double"){
+	    newname="float"
+	    isLiteral=true	    
+	}
+	el.innerHTML = newname
+	const p = el.previousSibling
+	var mx = parseInt(p.getAttribute("cx"))
+	var my = parseInt(p.getAttribute("cy"))
+        var cltl = el.getBBox().width
+        var clth = el.getBBox().height      
+        el.setAttribute("x", mx-(cltl/2))
+        el.setAttribute("y", my+(clth/4))
+	p.setAttribute("rx", (cltl/2)+20)
+	p.setAttribute("ry", (clth/2)+20)
+	if (isLiteral){
+	    p.setAttribute("fill", litColour)
+	    p.setAttribute("class", "owbo_literal")
+	    p.setAttribute("style", litStroke)   
+	} else {
+	    p.setAttribute("fill", classColour)
+	    p.setAttribute("class", "owbo_class")
+	    p.setAttribute("style", classStroke)	   
+	}
+	ndiv.remove()
+    }
+    const message = document.createElement("p")
+    message.setAttribute("class", "message")
+    message.innerHTML="Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i>, <i>float</i>, or <i>double</i> to refer to a literal of a specific datatype"
+    const dl = document.createElement("a")
+    dl.href= "javascript:deleteClass('"+pp.id+"');"
+    dl.innerHTML = "delete class"
+    ndiv.appendChild(inputtext)
+    ndiv.appendChild(message)    
+    ndiv.appendChild(dl)
+    body.appendChild(ndiv)
+    inputtext.focus()
+}
+function changePropertyName(el, v){
+    var diags = document.getElementsByClassName('diag')
+    if (diags.length!=0) diags[0].remove()
+    const body = document.getElementsByTagName("BODY")[0]
+    const ndiv = document.createElement("div")
+    const pp = el.parentNode
+    ndiv.setAttribute("style", "position:fixed; top: 100px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
+    ndiv.setAttribute("id", "diag_n_"+pp.id)
+    ndiv.setAttribute("class", "diag")    
+    const inputtext = document.createElement("input")
+    inputtext.setAttribute("type", "text")
+    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;")
+    inputtext.setAttribute("placeholder", "property name")
+    if (v){
+	inputtext.setAttribute("value", v)
+    }
+    inputtext.onchange = function() {
+	const newname = this.value
+	el.innerHTML = newname
+	const p = el.previousSibling
+	var mx = parseFloat(p.getAttribute("x1"))
+	var my = parseFloat(p.getAttribute("y1"))
+        var cltl = el.getBBox().width
+        var clth = el.getBBox().height      
+        el.setAttribute("x", mx-10-(cltl/2))
+        el.setAttribute("y", my-10+(clth/4))
+	ndiv.remove()
+    }
+    const dl = document.createElement("a")
+    dl.href= "javascript:deleteProperty('"+pp.id+"');"
+    dl.innerHTML = "delete property"
+    ndiv.appendChild(inputtext)
+    ndiv.appendChild(dl)
+    body.appendChild(ndiv)
+    inputtext.focus()    
+}
+function deleteClass(id){
+    document.getElementById("diag_n_"+id).remove()
+    document.getElementById(id).remove()
+}
+function deleteProperty(id){
+    document.getElementById("diag_n_"+id).remove()
+    document.getElementById(id).remove()
+}
+    </script>    
+  </body>
+</html>
