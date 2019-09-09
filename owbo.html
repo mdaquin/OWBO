@@ -141,7 +141,9 @@ function addClass(mx,my){
     cltext.onclick = function() {class_name_clicked(this)}
     changeClassName(cltext, undefined)
 }
-function addProperty(x1,y1,x2,y2){
+function addProperty(ox1,y1,ox2,y2){
+    var x1 = ox1; var x2 = ox2;
+    if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
     const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
     pg.setAttribute("id", "property_"+(pcount++))  
     var mx = (x1+x2)/2
@@ -155,7 +157,8 @@ function addProperty(x1,y1,x2,y2){
     else
 	existingProp[label]++
     var sign = 1
-    if (existingProp[label]%2==0) sign = -1
+    if (existingProp[label]%2==0) sign = -1    
+    if (ox1==ox2 && y1==y2) my = my + (sign*100)
     var increment = 20*Math.floor(existingProp[label]/2)
     if (Math.abs(cosa)>Math.abs(sina)) my += sign*increment
     else mx += sign*increment
