@@ -1,4 +1,3 @@
-
 <html>
   <head>
   </head>
@@ -55,12 +54,14 @@ function class_clicked(el){
         events.push({type: "click", caughtby: "class__clicked", time: new Date().getTime()})
 	if (creating_prop){
 	    creating_prop = false
-	    document.getElementById("prop_cr_message").remove()
+	    document.getElementById("prop_cr_message").remove()	    
 	    var x1 = parseFloat(prop_origin.getAttribute("cx"))
 	    var y1 = parseFloat(prop_origin.getAttribute("cy"))
 	    var x2 = parseFloat(el.getAttribute("cx"))
 	    var y2 = parseFloat(el.getAttribute("cy"))
-	    addProperty(x1,y1,x2,y2)
+	    var classId1 = prop_origin.parentNode.getAttribute('id')
+	    var classId2 = el.parentNode.getAttribute('id')	    
+	    addProperty(x1,y1,x2,y2,classId1,classId2)
 	} else {
 	    creating_prop = true
 	    prop_origin = el
@@ -141,11 +142,12 @@ function addClass(mx,my){
     cltext.onclick = function() {class_name_clicked(this)}
     changeClassName(cltext, undefined)
 }
-function addProperty(ox1,y1,ox2,y2){
+function addProperty(ox1,y1,ox2,y2,c1,c2){
     var x1 = ox1; var x2 = ox2;
     if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
     const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
-    pg.setAttribute("id", "property_"+(pcount++))  
+    pg.setAttribute("id", "property_"+(pcount++))
+    pg.setAttribute("class", "property_"+c1+"_"+c2+" property_"+c1+" property_"+c2)
     var mx = (x1+x2)/2
     var my = (y1+y2)/2
     var label = Math.max(x1,x2)+" "+Math.max(y1,y2)+" "+Math.min(x1,x2)+" "+Math.min(y1,y2)
@@ -308,6 +310,14 @@ function changePropertyName(el, v){
 function deleteClass(id){
     document.getElementById("diag_n_"+id).remove()
     document.getElementById(id).remove()
+    var props = document.getElementsByClassName("property_"+id)
+    console.log(props)
+    var toremove = []
+    for(var p in props)
+	if (typeof props[p].remove == "function") 
+	    toremove.push(props[p])
+    for(var e in toremove)
+	toremove[e].remove()
 }
 function deleteProperty(id){
     document.getElementById("diag_n_"+id).remove()
