@@ -169,14 +169,14 @@ function addProperty(ox1,y1,ox2,y2,c1,c2){
     pline11.setAttribute("y1", y1)
     pline11.setAttribute("x2", mx)
     pline11.setAttribute("y2", my)
-    pline11.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pline11.setAttribute("style", "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")
     pg.appendChild(pline11)
     const pline12 = document.createElementNS("http://www.w3.org/2000/svg", "line")
     pline12.setAttribute("x1", mx)
     pline12.setAttribute("y1", my)
     pline12.setAttribute("x2", x2)
     pline12.setAttribute("y2", y2)
-    pline12.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pline12.setAttribute("style", "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")
     pg.appendChild(pline12)    
     console.log(mx+" "+my+" "+l+" "+cosa+" "+sina)
     const pline2 = document.createElementNS("http://www.w3.org/2000/svg", "line")
@@ -288,7 +288,14 @@ function changePropertyName(el, v){
 	inputtext.setAttribute("value", v)
     }
     inputtext.onchange = function() {
-	const newname = this.value
+	var newname = this.value
+	el.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")
+	el.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")	
+	if (newname.toLowerCase() == "subclassof" || newname.toLowerCase() == "isa"){
+	    newname = "isa"
+	el.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
+	el.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")	
+	}
 	el.innerHTML = newname
 	const p = el.previousSibling
 	var mx = parseFloat(p.getAttribute("x1"))
@@ -298,11 +305,15 @@ function changePropertyName(el, v){
         el.setAttribute("x", mx-10-(cltl/2))
         el.setAttribute("y", my-10+(clth/4))
 	ndiv.remove()
-    }
+	  }
+    const message = document.createElement("p")
+    message.setAttribute("class", "message")
+    message.innerHTML="Type <i>subClassOf</i> or <i>isa</i> to create a subclass relation."
     const dl = document.createElement("a")
     dl.href= "javascript:deleteProperty('"+pp.id+"');"
     dl.innerHTML = "delete property"
     ndiv.appendChild(inputtext)
+    ndiv.appendChild(message)
     ndiv.appendChild(dl)
     body.appendChild(ndiv)
     inputtext.focus()    
