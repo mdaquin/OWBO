@@ -101,6 +101,7 @@ function toUri(s){
 function save() {
     events.push({type: "click", caughtby: "save", time: new Date().getTime()})
     var data = document.getElementById("prefixes_ta").value
+    data += "\n@prefix owbo: <http://datascienceinstitute.ie/owbo/> . \n"
     const svg = document.getElementsByTagName('svg')[0]
     var gs = svg.getElementsByTagName('g')    
     var classes = {}
@@ -129,6 +130,10 @@ function save() {
 	    data += "\n"+properties[p].name+" rdfs:domain "+classes[properties[p].from].name+" . "
 	    data += "\n"+properties[p].name+" rdfs:range "+classes[properties[p].to].name+" . "
 	}
+    }
+    for(var p in classes){
+	data += "\n"+classes[p].name+" owbo:x "+classes[p].x+" . "
+	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
     }
     var file = new Blob([data], {type: "text/plain"});
     var filename = "onto.ttl"
