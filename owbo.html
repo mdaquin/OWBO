@@ -12,7 +12,8 @@
 @base <http://example.org/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .    
     </textarea>
     <a href="javascript:showPrefixes();" style="float: right;">OK</a>
     </div>
@@ -91,11 +92,46 @@ function property_name_clicked(el){
     events.push({type: "click", caughtby: "property_name_clicked", time: new Date().getTime()})
     changePropertyName(el, el.innerHTML)
 }
+function toUri(s){
+    if (s=="string") return "xsd:string"
+    if (s=="integer") return "xsd:integer"    
+    if (s.indexOf(':')!==-1) return s
+    else return '<'+s+'>'
+}
 function save() {
     events.push({type: "click", caughtby: "save", time: new Date().getTime()})
-    var data = svg.innerHTML    
+    var data = document.getElementById("prefixes_ta").value
+    const svg = document.getElementsByTagName('svg')[0]
+    var gs = svg.getElementsByTagName('g')    
+    var classes = {}
+    var properties = {}
+    for (var g in gs){
+	if (gs[g] && gs[g].getAttribute){
+	    var id = gs[g].getAttribute('id')
+	    if (id.indexOf("property")==0){
+		var cl = gs[g].getAttribute("class").split(' ')
+		properties[id] = {}
+		properties[id].name = toUri(gs[g].childNodes[4].innerHTML)
+		properties[id].from = cl[1].substring(9)
+		properties[id].to = cl[2].substring(9)		
+	    } else if (id.indexOf("class")==0){
+		classes[id] = {}
+		classes[id].name=toUri(gs[g].childNodes[1].innerHTML)
+		classes[id].x=gs[g].childNodes[0].getAttribute('cx')
+		classes[id].y=gs[g].childNodes[0].getAttribute('cy')
+	    }
+	}
+    }
+    for(var p in properties) {
+	if (properties[p].name == "<isa>") {
+	    data += "\n"+classes[properties[p].from].name+" rdfs:subClassOf "+classes[properties[p].to].name+" . "
+	} else {
+	    data += "\n"+properties[p].name+" rdfs:domain "+classes[properties[p].from].name+" . "
+	    data += "\n"+properties[p].name+" rdfs:range "+classes[properties[p].to].name+" . "
+	}
+    }
     var file = new Blob([data], {type: "text/plain"});
-    var filename = "onto.svg"
+    var filename = "onto.ttl"
     if (window.navigator.msSaveOrOpenBlob) {
         window.navigator.msSaveOrOpenBlob(file, filename);
     } else { 
