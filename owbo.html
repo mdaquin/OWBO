@@ -156,6 +156,7 @@ function save() {
 }
 function load(e){
     document.getElementsByTagName('svg')[0].innerHTML=''
+    existingProp = {}
     var file = e.target.files[0]
     if (!file) {
 	return
