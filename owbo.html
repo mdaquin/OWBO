@@ -54,7 +54,7 @@ function svg_clicked(){
 	} else {
 	    const mx = event.clientX
 	    const my = event.clientY
-	    addClass(mx,my)
+	    addClass(mx,my,undefined)
 	}
     }
 }
@@ -72,7 +72,7 @@ function class_clicked(el){
 	    var y2 = parseFloat(el.getAttribute("cy"))
 	    var classId1 = prop_origin.parentNode.getAttribute('id')
 	    var classId2 = el.parentNode.getAttribute('id')	    
-	    addProperty(x1,y1,x2,y2,classId1,classId2)
+	    addProperty(x1,y1,x2,y2,classId1,classId2, undefined)
 	} else {
 	    creating_prop = true
 	    prop_origin = el
@@ -153,14 +153,85 @@ function save() {
     }
 }
 function load(e){
-    var file = e.target.files[0];
+    document.getElementsByTagName('svg')[0].innerHTML=''
+    var file = e.target.files[0]
     if (!file) {
-	return;
-  }
-    var reader = new FileReader();
+	return
+    }
+    var reader = new FileReader()
     reader.onload = function(e) {
-      var contents = e.target.result;
-	document.getElementsByTagName("svg")[0].innerHTML=contents;
+	const contents = e.target.result
+	var lines = contents.split(/\r?\n/)
+	var prefstr = ""
+	var properties = {}
+	var classes = {}
+	for (var l in lines){
+	    var tr = lines[l].split(/  */)
+	    if (tr[0]=='@base' || tr[0]=='@prefix')
+		prefstr += lines[l]+'\n'
+	    else {
+		if (tr.length > 3){
+		    if (tr[1]=='rdfs:domain'){
+			if (!properties[tr[0]])
+			    properties[tr[0]] = []			
+			if (properties[tr[0]].length > 0 &&
+			    !properties[tr[0]][properties[tr[0]].length-1].domain)
+			    properties[tr[0]][properties[tr[0]].length-1].domain = tr[2]
+			else
+			    properties[tr[0]].push({'domain': tr[2]})
+		    }
+		    if (tr[1]=='rdfs:range'){
+			if (!properties[tr[0]])
+			    properties[tr[0]] = []
+			if (properties[tr[0]].length > 0 &&
+			    !properties[tr[0]][properties[tr[0]].length-1].range)
+			    properties[tr[0]][properties[tr[0]].length-1].range = tr[2]
+			else
+			    properties[tr[0]].push({'range': tr[2]})
+		    }
+		    if (tr[1]=='rdfs:subClassOf'){
+			if (!properties["isa"])
+			    properties["isa"] = []			
+			properties["isa"].push({'domain': tr[0], 'range': tr[2]})
+		    }
+		    if (tr[1]=='owbo:x'){
+			if (classes[tr[0]])
+			    classes[tr[0]].x = tr[2]
+			else			    
+			    classes[tr[0]] = {'x': tr[2]}
+		    }
+		    if (tr[1]=='owbo:y'){
+			if (classes[tr[0]])
+			    classes[tr[0]].y = tr[2]
+			else			    
+			    classes[tr[0]] = {'y': tr[2]}
+		    }
+		    console.log(tr)
+		}
+	    }
+	}
+	console.log(properties)
+	console.log(classes)	
+	document.getElementById('prefixes_ta').value=prefstr
+	var clids = {}
+	for (var c in classes){
+	    var clid = addClass(parseInt(classes[c].x), parseInt(classes[c].y), c.replace(/>/,'').replace(/</,''))
+	    clids[c] = clid
+	}
+	console.log(clids)
+	for (var p in properties){
+	    for(var i in properties[p]){
+		pr = properties[p][i]	    
+		console.log(p)
+		console.log(pr)
+		addProperty(parseInt(classes[pr.domain].x),
+			    parseInt(classes[pr.domain].y),
+			    parseInt(classes[pr.range].x),
+			    parseInt(classes[pr.range].y), 
+			    clids[pr.domain],
+			    clids[pr.range], p.replace(/>/,'').replace(/</,''))
+	    }
+	}
     };
     reader.readAsText(file);
 }
@@ -171,7 +242,7 @@ function showPrefixes(){
 	document.getElementById("prefixes").style.display = "block"	
 }
 // changing model
-function addClass(mx,my){
+function addClass(mx,my,name){
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
     clg.setAttribute("id", "class_"+(clcount++))  
     const clcir = document.createElementNS("http://www.w3.org/2000/svg", "ellipse")
@@ -186,7 +257,8 @@ function addClass(mx,my){
     clg.appendChild(clcir)
     const cltext = document.createElementNS("http://www.w3.org/2000/svg", "text")
     clname = "New Class"
-    cltext.innerHTML="New Class"
+    if (name) clname = name
+    cltext.innerHTML= clname
     cltext.setAttribute("x", mx)
     cltext.setAttribute("y", my)
     clg.appendChild(cltext)
@@ -197,9 +269,11 @@ function addClass(mx,my){
     cltext.setAttribute("y", my+(clth/4))
     cltext.setAttribute("class", "owbo_class_name")
     cltext.onclick = function() {class_name_clicked(this)}
-    changeClassName(cltext, undefined)
+    if (!name)
+	changeClassName(cltext, undefined)
+    return "class_"+(clcount-1)
 }
-function addProperty(ox1,y1,ox2,y2,c1,c2){
+function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     var x1 = ox1; var x2 = ox2;
     if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
     const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
@@ -250,8 +324,9 @@ function addProperty(ox1,y1,ox2,y2,c1,c2){
     pline3.setAttribute("y2", my+((cosa*+5)-(sina*10)))
     pline3.setAttribute("style", "stroke-width: 1px; stroke: black")
     pg.appendChild(pline3)
-    const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")
-    ptext.innerHTML="New Property"
+    const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")    
+    ptext.innerHTML=pname
+    if (!pname) ptext.innerHTML="New Property"
     ptext.setAttribute("x", mx-10)
     ptext.setAttribute("y", my-10)
     pg.appendChild(ptext)
@@ -260,9 +335,14 @@ function addProperty(ox1,y1,ox2,y2,c1,c2){
     var clth = ptext.getBBox().height      
     ptext.setAttribute("x", mx-10-(cltl/2))
     ptext.setAttribute("y", my-10+(clth/4))
-	    ptext.setAttribute("class", "owbo_property_name")
+    ptext.setAttribute("class", "owbo_property_name")
     ptext.onclick = function() {property_name_clicked(this)}
-    changePropertyName(ptext, undefined)	    
+    if (!pname)
+	changePropertyName(ptext, undefined)
+    else if (pname=="isa"){
+	    pline11.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
+	    pline12.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")	
+	}
 }
 function changeClassName(el, v){
     var diags = document.getElementsByClassName('diag')
@@ -350,8 +430,8 @@ function changePropertyName(el, v){
 	el.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")	
 	if (newname.toLowerCase() == "subclassof" || newname.toLowerCase() == "isa"){
 	    newname = "isa"
-	el.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
-	el.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")	
+	    el.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
+	    el.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")	
 	}
 	el.innerHTML = newname
 	const p = el.previousSibling
