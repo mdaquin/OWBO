@@ -1,31 +1,33 @@
 <html>
   <head>
+    <title>OWBO - Ontology White Board</title>
   </head>
   <body>
-    <div id="functions">
-    <a href="javascript:showPrefixes();">prefixes</a>      
-    <a href="javascript: save();">save</a> 
-    Load: <input type="file" id="file-input" />
+    <div id="functions" style="margin-top: 5px; padding-top: 5px">
+    <a href="javascript:showPrefixes();"
+style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none"
+    >prefixes</a>      
+    <a href="javascript: save();" style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">save</a> 
+    Load: <input type="file" id="file-input" style="color: #254468"/>
     </div>
     <div id="prefixes" style="display: none; position: fixed; top: 20%; left: 20%; width: 60%; background: white;">
-    <textarea id="prefixes_ta" style="width: 100%; height: 200px;">
+    <textarea id="prefixes_ta" style="width: 100%; height: 200px; border-radius: 5px; color: #254468">
 @base <http://example.org/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .    
     </textarea>
-    <a href="javascript:showPrefixes();" style="float: right;">OK</a>
+    <a href="javascript:showPrefixes();" style="float: right; margin-top: 5px; padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">OK</a>
     </div>
-    <div id="owbo_board" style="width: 100%; height: 100vh"></div>
-    <script>
-	    
+    <div id="owbo_board" style="width: 100%; height: 100vh"></div>    
+    <script>	    
 // base / globals
 var events = []
-var classColour = "#ddd"
+var classColour = "#D5EAF0"
 var classStroke =  "stroke-width: 0px; stroke: black"
 var litColour = "#fff"
-var litStroke =  "stroke-width: 1px; stroke: #aaa"
+var litStroke =  "stroke-width: 1px; stroke: #254468"
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
 svg.setAttribute("width", "100%")
 svg.setAttribute("height", "100%")
@@ -261,6 +263,7 @@ function addClass(mx,my,name){
     cltext.innerHTML= clname
     cltext.setAttribute("x", mx)
     cltext.setAttribute("y", my)
+    cltext.setAttribute("style", "fill: #254468")
     clg.appendChild(cltext)
     svg.appendChild(clg)
     var cltl = cltext.getBBox().width
@@ -300,14 +303,14 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     pline11.setAttribute("y1", y1)
     pline11.setAttribute("x2", mx)
     pline11.setAttribute("y2", my)
-    pline11.setAttribute("style", "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")
+    pline11.setAttribute("style", "stroke-width: 1px; stroke: #254468; stroke-dasharray: 3 1;")
     pg.appendChild(pline11)
     const pline12 = document.createElementNS("http://www.w3.org/2000/svg", "line")
     pline12.setAttribute("x1", mx)
     pline12.setAttribute("y1", my)
     pline12.setAttribute("x2", x2)
     pline12.setAttribute("y2", y2)
-    pline12.setAttribute("style", "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")
+    pline12.setAttribute("style", "stroke-width: 1px; stroke: #254468; stroke-dasharray: 3 1;")
     pg.appendChild(pline12)    
     console.log(mx+" "+my+" "+l+" "+cosa+" "+sina)
     const pline2 = document.createElementNS("http://www.w3.org/2000/svg", "line")
@@ -315,20 +318,21 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     pline2.setAttribute("y1", my)
     pline2.setAttribute("x2", mx+((cosa*-10)-(sina*-5)))
     pline2.setAttribute("y2", my+((cosa*-5)-(sina*10)))
-    pline2.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pline2.setAttribute("style", "stroke-width: 1px; stroke: #254468")
     pg.appendChild(pline2)
     const pline3 = document.createElementNS("http://www.w3.org/2000/svg", "line")
     pline3.setAttribute("x1", mx)
     pline3.setAttribute("y1", my)
     pline3.setAttribute("x2", mx+((cosa*-10)-(sina*+5)))
     pline3.setAttribute("y2", my+((cosa*+5)-(sina*10)))
-    pline3.setAttribute("style", "stroke-width: 1px; stroke: black")
+    pline3.setAttribute("style", "stroke-width: 1px; stroke: #254468")
     pg.appendChild(pline3)
     const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")    
     ptext.innerHTML=pname
     if (!pname) ptext.innerHTML="New Property"
     ptext.setAttribute("x", mx-10)
     ptext.setAttribute("y", my-10)
+    ptext.setAttribute("style", "fill: #254468")
     pg.appendChild(ptext)
     svg.insertBefore(pg, svg.childNodes[0])
     var cltl = ptext.getBBox().width
