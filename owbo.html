@@ -7,8 +7,9 @@
     <a href="javascript:showPrefixes();"
 style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none"
     >prefixes</a>      
+    <input id="onto_name" type="text" value="onto" style="padding: 5px 10px 5px 10px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468"></input>
     <a href="javascript: save();" style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">save</a> 
-    Load: <input type="file" id="file-input" style="color: #254468"/>
+    <span style="color: #254468">Load:</span> <input type="file" id="file-input" style="color: #254468"/>
     </div>
     <div id="prefixes" style="display: none; position: fixed; top: 20%; left: 20%; width: 60%; background: white;">
     <textarea id="prefixes_ta" style="width: 100%; height: 200px; border-radius: 5px; color: #254468">
@@ -96,7 +97,8 @@ function property_name_clicked(el){
 }
 function toUri(s){
     if (s=="string") return "xsd:string"
-    if (s=="integer") return "xsd:integer"    
+    if (s=="integer") return "xsd:integer"
+    if (s=="float") return "xsd:float"						    
     if (s.indexOf(':')!==-1) return s
     else return '<'+s+'>'
 }
@@ -138,7 +140,7 @@ function save() {
 	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
     }
     var file = new Blob([data], {type: "text/plain"});
-    var filename = "onto.ttl"
+    var filename = document.getElementById("onto_name").value+".ttl"
     if (window.navigator.msSaveOrOpenBlob) {
         window.navigator.msSaveOrOpenBlob(file, filename);
     } else { 
@@ -158,6 +160,7 @@ function load(e){
     document.getElementsByTagName('svg')[0].innerHTML=''
     existingProp = {}
     var file = e.target.files[0]
+    document.getElementById("onto_name").value = file.name.replace(/\.ttl/, '')
     if (!file) {
 	return
     }
@@ -218,7 +221,7 @@ function load(e){
 	document.getElementById('prefixes_ta').value=prefstr
 	var clids = {}
 	for (var c in classes){
-	    var clid = addClass(parseInt(classes[c].x), parseInt(classes[c].y), c.replace(/>/,'').replace(/</,''))
+	    var clid = addClass(parseInt(classes[c].x), parseInt(classes[c].y), c.replace(/>/,'').replace(/</,'').replace("xsd:", ""))
 	    clids[c] = clid
 	}
 	console.log(clids)
@@ -232,7 +235,7 @@ function load(e){
 			    parseInt(classes[pr.range].x),
 			    parseInt(classes[pr.range].y), 
 			    clids[pr.domain],
-			    clids[pr.range], p.replace(/>/,'').replace(/</,''))
+			    clids[pr.range], p.replace(/>/,'').replace(/</,'').replace("xsd:", ""))
 	    }
 	}
     };
@@ -275,6 +278,23 @@ function addClass(mx,my,name){
     cltext.onclick = function() {class_name_clicked(this)}
     if (!name)
 	changeClassName(cltext, undefined)
+    else {
+	if (name=="string"){
+	    clcir.setAttribute("fill", litColour)
+	    clcir.setAttribute("class", "owbo_literal")
+	    clcir.setAttribute("style", litStroke)   
+	}
+	if (name =="integer" || name =="int"){
+	    clcir.setAttribute("fill", litColour)
+	    clcir.setAttribute("class", "owbo_literal")
+	    clcir.setAttribute("style", litStroke)   
+	}
+	if (name=="float"){
+	    clcir.setAttribute("fill", litColour)
+	    clcir.setAttribute("class", "owbo_literal")
+	    clcir.setAttribute("style", litStroke)   
+	}
+    }
     return "class_"+(clcount-1)
 }
 function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
