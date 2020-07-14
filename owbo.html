@@ -1,27 +1,36 @@
-<html>
-  <head>
-    <title>OWBO - Ontology White Board</title>
-  </head>
+<html><head><title>OWBO - Ontology White Board</title></head>
   <body>
-    <div id="functions" style="margin-top: 5px; padding-top: 5px">
-    <a href="javascript:showPrefixes();"
-style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none"
-    >prefixes</a>      
-    <input id="onto_name" type="text" value="onto" style="padding: 5px 10px 5px 10px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468"></input>
-    <a href="javascript: save();" style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">save</a> 
-    <span style="color: #254468">Load:</span> <input type="file" id="file-input" style="color: #254468"/>
+    <!-- top bar -->
+    <div id="functions" style="margin-top: 1vh; height: 4vh">
+      <a href="javascript:showPrefixes();"
+	 style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">prefixes</a>      
+      <input id="onto_name" type="text" value="onto" style="padding: 5px 10px 5px 10px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468"></input>
+      <a href="javascript: save();" style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">save</a> 
+      <span style="color: #254468">Load:</span> <input type="file" id="file-input" style="color: #254468"/>
     </div>
+    <!-- prefix dialog -->
     <div id="prefixes" style="display: none; position: fixed; top: 20%; left: 20%; width: 60%; background: white;">
-    <textarea id="prefixes_ta" style="width: 100%; height: 200px; border-radius: 5px; color: #254468">
+      <textarea id="prefixes_ta" style="width: 100%; height: 200px; border-radius: 5px; color: #254468">
 @base <http://example.org/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .    
-    </textarea>
-    <a href="javascript:showPrefixes();" style="float: right; margin-top: 5px; padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">OK</a>
+      </textarea>
+      <a href="javascript:showPrefixes();" style="float: right; margin-top: 5px; padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">OK</a>
     </div>
-    <div id="owbo_board" style="width: 100%; height: 100vh"></div>    
+    <!-- actual drawing area --> 
+    <div id="owbo_board" style="width: 100%; height: 90vh"></div>    
+    <!-- help button and dialog -->
+    <div style="position: fixed; bottom: 10px; right: 10px;" id="help_button"><a href="javascript:showHelp();" style="color: #254468; font-size: 30px; text-decoration: none;">?</a></div>
+    <div id="help_dialog" style="display: none; color: #254468; border: 1px #254468 solid; border-radius: 5px; position: fixed; bottom: 10px; right: 50px; max-width: 50vw; padding: 10px;">
+	<p>Click/tap on the white space to create a class</p>
+    <p>Click/tap on class name to change it, or delete the class</p>
+	<p>Click/tap on class to create a property</p>
+    <p>Click/tap on property name to change it, or delete the property</p>
+	<p>Long click/tap on class to move it</p>
+    </div>
+    <!-- script -->
     <script>	    
 // base / globals
 var events = []
@@ -32,11 +41,12 @@ var litStroke =  "stroke-width: 1px; stroke: #254468"
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
 svg.setAttribute("width", "100%")
 svg.setAttribute("height", "100%")
+svg.onmousemove = function() {classDragOver()};
 svg.onclick = function() {svg_clicked()};
 (function() {
     document.getElementById("owbo_board").appendChild(svg);
-    document.getElementById('file-input')
-	.addEventListener('change', load, false);
+    document.getElementById("file-input")
+	.addEventListener("change", load, false);
 })();
 
 // variables
@@ -48,8 +58,8 @@ var existingProp = {}
 
 // events
 function svg_clicked(){
+    hideHelp();
     if (events.length>0 && events[events.length-1].type=="click" && (new Date().getTime() - events[events.length-1].time) < 200){
-	console.log("event already dealt with")
     } else {
 	if (creating_prop) {
 	    creating_prop = false
@@ -74,11 +84,11 @@ function classDragStart(el){
 	deltaY=parseInt(el.getAttribute("cy"))-event.clientY	
     } 
 }
-function classDragOver(el){
+function classDragOver(){
     if (dragging){
 	classDragged.setAttribute("cx", event.clientX+deltaX)
 	classDragged.setAttribute("cy", event.clientY+deltaY)
-	var tel = el.parentNode.childNodes[1]
+	var tel = classDragged.parentNode.childNodes[1]
 	var mx = parseInt(classDragged.getAttribute("cx"))
 	var my = parseInt(classDragged.getAttribute("cy"))
         var cltl = tel.getBBox().width
@@ -88,7 +98,6 @@ function classDragOver(el){
     }
 }
 function class_clicked(el){
-    console.log("here 1")
     if (new Date().getTime() - timeStarted > 500) {
 	dragging = true
         events.push({type: "click", caughtby: "class__clicked", time: new Date().getTime()})	
@@ -96,7 +105,7 @@ function class_clicked(el){
 	const txt = document.createElement("div")
 	txt.setAttribute("style", "position:fixed; bottom: 20px; left:20%; text-align: center; width: 60%;")
 	txt.setAttribute("id","prop_cr_message")
-	txt.innerHTML="Dragging class "+clname+" - click/tap again to stop"
+	txt.innerHTML="Dragging class "+clname+". Click/tap again to stop."
 	document.getElementsByTagName("BODY")[0].appendChild(txt);
 	return
     } else if (dragging) {
@@ -124,7 +133,6 @@ function class_clicked(el){
 	return 
     }
     if (events.length>0 && events[events.length-1].type=="click" && (new Date().getTime() - events[events.length-1].time) < 200){
-	console.log("event already dealt with")
     } else {
         events.push({type: "click", caughtby: "class__clicked", time: new Date().getTime()})
 	if (creating_prop){
@@ -143,7 +151,7 @@ function class_clicked(el){
 	    const txt = document.createElement("div")
 	    txt.setAttribute("style", "position:fixed; bottom: 20px; left:20%; text-align: center; width: 60%;")
 	    txt.setAttribute("id","prop_cr_message")
-	    txt.innerHTML="Creating a property: Select the destination class"
+	    txt.innerHTML="Creating a property. Select the destination class (or click/tap in white space to cancel)."
 	    document.getElementsByTagName("BODY")[0].appendChild(txt);
 	}
     }
@@ -273,7 +281,6 @@ function load(e){
 			else			    
 			    classes[tr[0]] = {'y': tr[2]}
 		    }
-		    console.log(tr)
 		}
 	    }
 	}
@@ -306,7 +313,16 @@ function showPrefixes(){
     if (document.getElementById("prefixes").style.display == "block")
 	document.getElementById("prefixes").style.display = "none"
     else
-	document.getElementById("prefixes").style.display = "block"	
+	document.getElementById("prefixes").style.display = "block"
+}
+function showHelp(){
+    if (document.getElementById("help_dialog").style.display == "block")
+	document.getElementById("help_dialog").style.display = "none"
+    else
+	document.getElementById("help_dialog").style.display = "block"	
+}
+function hideHelp(){
+    document.getElementById("help_dialog").style.display = "none"
 }
 // changing model
 function addClass(mx,my,name){
