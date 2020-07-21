@@ -57,7 +57,7 @@ var clcount=0;
 var existingProp = {}
 
 // events
-function svg_clicked(){
+function svg_clicked(){    
     hideHelp();
     if (events.length>0 && events[events.length-1].type=="click" && (new Date().getTime() - events[events.length-1].time) < 200){
     } else {
@@ -98,7 +98,7 @@ function classDragOver(){
     }
 }
 function class_clicked(el){
-    if (new Date().getTime() - timeStarted > 500) {
+    if (new Date().getTime() - timeStarted > 300) {
 	dragging = true
         events.push({type: "click", caughtby: "class__clicked", time: new Date().getTime()})	
 	var clname = el.parentNode.childNodes[1].innerHTML
@@ -185,12 +185,12 @@ function save() {
 	    if (id.indexOf("property")==0){
 		var cl = gs[g].getAttribute("class").split(' ')
 		properties[id] = {}
-		properties[id].name = toUri(gs[g].childNodes[4].innerHTML)
+		properties[id].name = toUri(gs[g].childNodes[4].innerHTML.replace(/ /g, '_'))
 		properties[id].from = cl[1].substring(9)
 		properties[id].to = cl[2].substring(9)		
 	    } else if (id.indexOf("class")==0){
 		classes[id] = {}
-		classes[id].name=toUri(gs[g].childNodes[1].innerHTML)
+		classes[id].name=toUri(gs[g].childNodes[1].innerHTML.replace(/ /g, '_'))
 		classes[id].x=gs[g].childNodes[0].getAttribute('cx')
 		classes[id].y=gs[g].childNodes[0].getAttribute('cy')
 	    }
@@ -337,10 +337,10 @@ function addClass(mx,my,name){
     clcir.setAttribute("style", classStroke)    
     clcir.setAttribute("class", "owbo_class")
     clcir.setAttribute("draggable", "true")    
-    clcir.onmousedown = function() {classDragStart(this);}
+    clcir.onpointerdown = function() {classDragStart(this);}
     clcir.onmousemove = function() {classDragOver(this);}
 //    clcir.onmouseleave = function() {class_clicked(this);}
-    clcir.onmouseup = function() {class_clicked(this);}
+    clcir.onpointerup = function() {class_clicked(this);}
     clg.appendChild(clcir)
     const cltext = document.createElementNS("http://www.w3.org/2000/svg", "text")
     clname = "New Class"
