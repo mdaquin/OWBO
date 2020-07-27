@@ -1,4 +1,9 @@
-<html><head><title>OWBO - Ontology White Board</title></head>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <title>OWBO - Ontology White Board</title>
+  </head>
   <body>
     <!-- top bar -->
     <div id="functions" style="margin-top: 1vh; height: 4vh">
@@ -6,7 +11,9 @@
 	 style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">prefixes</a>      
       <input id="onto_name" type="text" value="onto" style="padding: 5px 10px 5px 10px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468"></input>
       <a href="javascript: save();" style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">save</a> 
+      <div id="drop-area" style="display:inline">
       <span style="color: #254468">Load:</span> <input type="file" id="file-input" style="color: #254468"/>
+      </div>
     </div>
     <!-- prefix dialog -->
     <div id="prefixes" style="display: none; position: fixed; top: 20%; left: 20%; width: 60%; background: white;">
@@ -57,6 +64,35 @@ var clcount=0;
 var existingProp = {}
 
 // events
+
+/* BEGIN drag-n-drop code */
+let dropArea = document.getElementById('drop-area')
+;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, preventDefaults, false)
+})
+function preventDefaults (e) {
+  e.preventDefault()
+  e.stopPropagation()
+}
+;['dragenter', 'dragover'].forEach(eventName => {
+  dropArea.addEventListener(eventName, highlight, false)
+})
+;['dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, unhighlight, false)
+})
+function highlight(e){dropArea.classList.add('highlight')}
+function unhighlight(e){dropArea.classList.remove('highlight')}
+dropArea.addEventListener('drop', handleDrop, false)
+function handleDrop(e) {
+  let dt = e.dataTransfer
+  let files = dt.files
+  handleFiles(files, e)
+}
+function handleFiles(files, e) {
+  ([...files]).forEach(loadFile)
+}
+/* END drag-n-drop code */
+
 function svg_clicked(){    
     hideHelp();
     if (events.length>0 && events[events.length-1].type=="click" && (new Date().getTime() - events[events.length-1].time) < 200){
@@ -225,10 +261,14 @@ function save() {
         }, 0); 
     }
 }
-function load(e){
+function load(e) {
+    var file = e.target.files[0]
+    loadFile(file)
+}
+function loadFile(file){
     document.getElementsByTagName('svg')[0].innerHTML=''
     existingProp = {}
-    var file = e.target.files[0]
+    //var file = e.target.files[0]
     document.getElementById("onto_name").value = file.name.replace(/\.ttl/, '')
     if (!file) {
 	return
@@ -237,14 +277,36 @@ function load(e){
     reader.onload = function(e) {
 	const contents = e.target.result
 	var lines = contents.split(/\r?\n/)
+
 	var prefstr = ""
 	var properties = {}
 	var classes = {}
+	
+	/** BEGIN alexdma's alternative miniparser */
+	var chunks = contents.split(/\.\s+/)
+	for (var ii in chunks) {
+	    var chu = chunks[ii];
+	    var stmts = chu.split(/\s*;\s*/);
+	    var subj = stmts[0].split(/\s+/)[0];
+	    for( var iii in stmts) {
+            var stmt = stmts[iii].trim();
+            var tr = stmt.split(/\s+/);
+            if (tr[0]=='@base' || tr[0]=='@prefix')
+                prefstr += tr[0]+' '+tr[1]+' '+(tr[2]?tr[2]:'')+'. \n';
+            else {
+                //var prop = tr.length == 2 || tr[1].startsWith('"') || tr[1].startsWith('[') ? tr[0] : tr[1];
+            }
+	    }
+	}
+	/** END alexdma's alternative miniparser */
+	
+
 	for (var l in lines){
 	    var tr = lines[l].split(/  */)
 	    if (tr[0]=='@base' || tr[0]=='@prefix')
 		prefstr += lines[l]+'\n'
 	    else {
+	    //console.log(tr)
 		if (tr.length > 3){
 		    if (tr[1]=='rdfs:domain'){
 			if (!properties[tr[0]])
@@ -298,6 +360,8 @@ function load(e){
 		pr = properties[p][i]	    
 		console.log(p)
 		console.log(pr)
+		console.log(pr.domain)
+		console.log(classes)
 		addProperty(parseInt(classes[pr.domain].x),
 			    parseInt(classes[pr.domain].y),
 			    parseInt(classes[pr.range].x),
