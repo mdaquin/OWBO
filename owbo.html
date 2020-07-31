@@ -3,16 +3,25 @@
   <head>
     <meta charset="utf-8"/>
     <title>OWBO - Ontology White Board</title>
+    <style>
+#drop-area { border: 2px dashed #ccc; border-radius: 10px; display:inline-block; margin-top:5px; padding:10px; width:400px }
+#drop-area.highlight { border-color: purple }
+#onto-name { padding: 5px 2px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468; text-align:right }
+.owbo_button { background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none }
+.owbo_button:hover { background: #111 }
+.topnav { background-color: #cde; font-family: sans-serif; overflow: hidden; padding: 5px }
+    </style>
   </head>
-  <body>
+  <body style="margin:0">
     <!-- top bar -->
-    <div id="functions" style="margin-top: 1vh; height: 4vh">
-      <a href="javascript:showPrefixes();"
-	 style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">prefixes</a>      
-      <input id="onto_name" type="text" value="onto" style="padding: 5px 10px 5px 10px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468"></input>
-      <a href="javascript: save();" style="padding: 5px 10px 5px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">save</a> 
-      <div id="drop-area" style="display:inline">
-      <span style="color: #254468">Load:</span> <input type="file" id="file-input" style="color: #254468"/>
+    <div class="topnav" id="functions">
+      <a class="owbo_button" href="javascript:showPrefixes();" title="Show prefix mappings">prefixes</a>      
+      <input id="onto-name" type="text" placeholder="ontology filename" value="onto" size="16"/><span style="font-family: sans-serif;">&nbsp;.ttl</span>
+      <a class="owbo_button" href="javascript: save();" title="Save to your device as Turtle file">download</a> 
+      <div id="drop-area">
+        <span style="color: #254468">Load:</span>
+        <input type="file" id="file-input" style="color:#254468; display:none"/>
+        <label class="owbo_button" for="file-input">Click or drag</label>
       </div>
     </div>
     <!-- prefix dialog -->
@@ -245,7 +254,7 @@ function save() {
 	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
     }
     var file = new Blob([data], {type: "text/plain"});
-    var filename = document.getElementById("onto_name").value+".ttl"
+    var filename = document.getElementById("onto-name").value+".ttl"
     if (window.navigator.msSaveOrOpenBlob) {
         window.navigator.msSaveOrOpenBlob(file, filename);
     } else { 
@@ -269,7 +278,7 @@ function loadFile(file){
     document.getElementsByTagName('svg')[0].innerHTML=''
     existingProp = {}
     //var file = e.target.files[0]
-    document.getElementById("onto_name").value = file.name.replace(/\.ttl/, '')
+    document.getElementById("onto-name").value = file.name.replace(/\.ttl/, '')
     if (!file) {
 	return
     }
