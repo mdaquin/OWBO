@@ -1,6 +1,7 @@
 # OWBO - Ontology White Board
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Ontologies are formal conceptual models of a domain, which can be used to structure, understand and provide meaning to data. Existing ontology editors enable users to write complex models, if tending to be very complicated. However, it is often the case that, at least when starting an ontology, one mostly only need basic conceptual constructs, i.e. the ability to create classes and to relate them through relations. In this case, drawing them on a white board is often more efficient than trying to implement such an initial "skeleton" ontology directly in the ontology editor. 
 
 OWBO aims to provide basic support for this. It makes it possible to create basic conceptual structures by simply adding and naming classes, and relating them with relations. Clicking in a white space creates a class; clicking on a class starts a relation; and clicking on a second class ends it. 
