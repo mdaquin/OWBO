@@ -4,13 +4,17 @@
     <meta charset="utf-8"/>
     <title>OWBO - Ontology White Board</title>
     <style>
-#drop-area { border: 2px dashed #ccc; border-radius: 10px; display:inline-block; margin-top:5px; padding:10px; width:400px }
+#drop-area { border: 2px dashed #ccc; border-radius: 10px; display:inline-block; margin-top:5px; padding:10px; width:300px }
 #drop-area.highlight { border-color: purple }
 #onto-name { padding: 5px 2px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468; text-align:right }
 .owbo_button { background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none }
 .owbo_button:hover { background: #111 }
-.owbo_class { cursor:pointer }
+.owbo_class, .owbo_literal { cursor:pointer }
+.owbo_class { stroke-width:0px; stroke:#000 }
+.owbo_class:hover, .owbo_literal:hover { stroke-width:1.5px; stroke:#f00 }
 .owbo_class:hover { fill:#BDE3EE }
+.owbo_literal { stroke-width:1px; stroke:#254468 }
+.owbo_class_name { cursor:text }
 .topnav { background-color: #cde; font-family: sans-serif; overflow: hidden; padding: 5px }
     </style>
   </head>
@@ -37,8 +41,14 @@
       </textarea>
       <a href="javascript:showPrefixes();" style="float: right; margin-top: 5px; padding: 2px 10px; background: #254468; border-radius: 5px; color: white; text-decoration: none">OK</a>
     </div>
+    
     <!-- actual drawing area --> 
-    <div id="owbo_board" style="width: 100%; height: 90vh"></div>    
+    <div id="owbo_board" style="cursor:crosshair; width: 100%; height: 90vh"></div> 
+ 
+    <!-- footer -->      
+    <div style="position: fixed; bottom: 10px; left: 10px;">
+      <span style="color:#888">OWBO is open source.</span> <a href="https://github.com/mdaquin/OWBO" target="_blank">GitHub</a>
+    </div>
     <!-- help button and dialog -->
     <div style="position: fixed; bottom: 10px; right: 10px;" id="help_button"><a href="javascript:showHelp();" style="color: #254468; font-size: 30px; text-decoration: none;">?</a></div>
     <div id="help_dialog" style="display: none; color: #254468; border: 1px #254468 solid; border-radius: 5px; position: fixed; bottom: 10px; right: 50px; max-width: 50vw; padding: 10px;">
@@ -51,6 +61,7 @@
 	    <li><strong>Move class</strong>: Long click/press, then release to start dragging</li>
 	  </ul>
     </div>
+    
   </body> 
   
   <!-- script -->
@@ -58,9 +69,7 @@
 // base / globals
 var events = []
 var classColour = "#D5EAF0"
-var classStroke =  "stroke-width: 0px; stroke: black"
 var litColour = "#fff"
-var litStroke =  "stroke-width: 1px; stroke: #254468"
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
 svg.setAttribute("width", "100%")
 svg.setAttribute("height", "100%")
@@ -413,10 +422,8 @@ function addClass(mx,my,name){
     clcir.setAttribute("cy", my)
     clcir.setAttribute("rx", "60")
     clcir.setAttribute("ry", "30")
-    clcir.setAttribute("fill", classColour)
-    clcir.setAttribute("style", classStroke)    
-    clcir.setAttribute("class", "owbo_class")
     clcir.setAttribute("draggable", "true")    
+    clcir.setAttribute("class", "owbo_class")
     clcir.onpointerdown = function() {classDragStart(this);}
     clcir.onmousemove = function() {classDragOver(this);}
 //    clcir.onmouseleave = function() {class_clicked(this);}
@@ -436,28 +443,16 @@ function addClass(mx,my,name){
     cltext.setAttribute("x", mx-(cltl/2))
     cltext.setAttribute("y", my+(clth/4))
     cltext.setAttribute("class", "owbo_class_name")
-    cltext.onclick = function() {class_name_clicked(this)}
-    if (!name)
-	changeClassName(cltext, undefined)
-    else {
-	if (name=="string"){
-	    clcir.setAttribute("fill", litColour)
-	    clcir.setAttribute("class", "owbo_literal")
-	    clcir.setAttribute("style", litStroke)   
-	}
-	if (name =="integer" || name =="int"){
-	    clcir.setAttribute("fill", litColour)
-	    clcir.setAttribute("class", "owbo_literal")
-	    clcir.setAttribute("style", litStroke)   
-	}
-	if (name=="float"){
-	    clcir.setAttribute("fill", litColour)
-	    clcir.setAttribute("class", "owbo_literal")
-	    clcir.setAttribute("style", litStroke)   
-	}
-    }
+    cltext.onclick = function() { class_name_clicked(this) }
+    clcir.setAttribute("fill", classColour)
+    if (name) {
+        let isLiteral = ['string','integer','int','float'].includes(name);
+	    clcir.setAttribute("fill", isLiteral ? litColour : classColour);
+	    clcir.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
+    } else changeClassName(cltext, undefined)
     return "class_"+(clcount-1)
 }
+
 function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     var x1 = ox1; var x2 = ox2;
     if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
@@ -543,48 +538,42 @@ function changeClassName(el, v){
     inputtext.setAttribute("type", "text")
     inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;")
     inputtext.setAttribute("placeholder", "class name")
-    if (v){
-	inputtext.setAttribute("value", v)
-    }
+    if (v) inputtext.setAttribute("value", v)
     inputtext.onchange = function() {
-	var newname = this.value
-	var isLiteral = false
-	if (newname.toLowerCase()=="string" || newname.toLowerCase()=="str"){
-	    newname="string"
-	    isLiteral=true
-	}
-	if (newname.toLowerCase()=="integer" || newname.toLowerCase()=="int"){
-	    newname="integer"
-	    isLiteral=true	    
-	}
-	if (newname.toLowerCase()=="float" || newname.toLowerCase()=="double"){
-	    newname="float"
-	    isLiteral=true	    
-	}
-	el.innerHTML = newname
-	const p = el.previousSibling
-	var mx = parseInt(p.getAttribute("cx"))
-	var my = parseInt(p.getAttribute("cy"))
+        const litMap = { 
+            'string':'string',
+            'str':'string',
+            'integer':'integer',
+            'int':'integer',
+            'float':'float',
+            'double':'float'
+        };
+        var newname = this.value;
+        var isLiteral = newname.toLowerCase() in litMap;
+        if (isLiteral) { newname = litMap[newname.toLowerCase()] };
+        el.innerHTML = newname
+        const p = el.previousSibling
+        var mx = parseInt(p.getAttribute("cx"))
+        var my = parseInt(p.getAttribute("cy"))
         var cltl = el.getBBox().width
         var clth = el.getBBox().height      
         el.setAttribute("x", mx-(cltl/2))
         el.setAttribute("y", my+(clth/4))
-	p.setAttribute("rx", (cltl/2)+20)
-	p.setAttribute("ry", (clth/2)+20)
-	if (isLiteral){
-	    p.setAttribute("fill", litColour)
-	    p.setAttribute("class", "owbo_literal")
-	    p.setAttribute("style", litStroke)   
-	} else {
-	    p.setAttribute("fill", classColour)
-	    p.setAttribute("class", "owbo_class")
-	    p.setAttribute("style", classStroke)	   
-	}
-	ndiv.remove()
+        p.setAttribute("rx", (cltl/2)+20)
+        p.setAttribute("ry", (clth/2)+20)
+	    p.setAttribute("fill", isLiteral ? litColour : classColour);
+	    p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
+        ndiv.remove()
     }
     const message = document.createElement("p")
     message.setAttribute("class", "message")
-    message.innerHTML="Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i>, <i>float</i>, or <i>double</i> to refer to a literal of a specific datatype"
+    message.innerHTML='Type or select <a href="#"><i>string</i></a>, <a href="#"><i>str</i></a>, <a href="#"><i>integer</i></a>, <a href="#"><i>int</i></a>, <a href="#"><i>float</i></a>, or <a href="#"><i>double</i></a> to refer to a literal of a specific datatype'
+    var links = message.getElementsByTagName('a')
+    for (var l in links) links[l].onclick = function(e){
+        	inputtext.value = e.target.textContent
+        	inputtext.onchange()
+    }
+
     const dl = document.createElement("a")
     dl.href= "javascript:deleteClass('"+pp.id+"');"
     dl.innerHTML = "delete class"
@@ -631,7 +620,13 @@ function changePropertyName(el, v){
 	  }
     const message = document.createElement("p")
     message.setAttribute("class", "message")
-    message.innerHTML="Type <i>subClassOf</i> or <i>isa</i> to create a subclass relation."
+    message.innerHTML="Type or select <a href=\"#\"><i>subClassOf</i></a> or <a href=\"#\"><i>isa</i></a> to create a subclass relation."
+    var links = message.getElementsByTagName('a')
+    for (var l in links) links[l].onclick = function(e){
+        	inputtext.value = e.target.textContent
+        	inputtext.onchange()
+    }
+    
     const dl = document.createElement("a")
     dl.href= "javascript:deleteProperty('"+pp.id+"');"
     dl.innerHTML = "delete property"
