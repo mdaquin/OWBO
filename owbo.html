@@ -570,6 +570,7 @@ function changeClassName(el, v){
     message.innerHTML='Type or select <a href="#"><i>string</i></a>, <a href="#"><i>str</i></a>, <a href="#"><i>integer</i></a>, <a href="#"><i>int</i></a>, <a href="#"><i>float</i></a>, or <a href="#"><i>double</i></a> to refer to a literal of a specific datatype'
     var links = message.getElementsByTagName('a')
     for (var l in links) links[l].onclick = function(e){
+        	preventDefaults(e)
         	inputtext.value = e.target.textContent
         	inputtext.onchange()
     }
@@ -623,6 +624,7 @@ function changePropertyName(el, v){
     message.innerHTML="Type or select <a href=\"#\"><i>subClassOf</i></a> or <a href=\"#\"><i>isa</i></a> to create a subclass relation."
     var links = message.getElementsByTagName('a')
     for (var l in links) links[l].onclick = function(e){
+        	preventDefaults(e)
         	inputtext.value = e.target.textContent
         	inputtext.onchange()
     }
