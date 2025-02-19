@@ -1,3 +1,7 @@
+var clcount=0;
+var pcount=0;
+var existingProp = {}
+
 function addClass(mx,my,name){
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
     clg.setAttribute("id", "class_"+(clcount++))  
@@ -14,7 +18,7 @@ function addClass(mx,my,name){
     clcir.onpointerup = function() {class_clicked(this);}
     clg.appendChild(clcir)
     const cltext = document.createElementNS("http://www.w3.org/2000/svg", "text")
-    clname = "New Class"
+    clname = "New Concept"
     if (name) clname = name
     cltext.innerHTML= clname
     cltext.setAttribute("x", mx)
@@ -28,10 +32,10 @@ function addClass(mx,my,name){
     cltext.setAttribute("y", my+(clth/4))
     cltext.setAttribute("class", "owbo_class_name")
     cltext.onclick = function() { class_name_clicked(this) }
-    clcir.setAttribute("fill", classColour)
+    // clcir.setAttribute("fill", classColour)
     if (name) {
         let isLiteral = ['string','integer','int','float'].includes(name);
-	    clcir.setAttribute("fill", isLiteral ? litColour : classColour);
+	    // clcir.setAttribute("fill", isLiteral ? litColour : classColour);
 	    clcir.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
     } else changeClassName(cltext, undefined)
     return "class_"+(clcount-1)
@@ -49,10 +53,8 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     var l = Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2))
     var cosa = (x2-x1)/l
     var sina = (y2-y1)/l    
-    if (!existingProp[label])
-	existingProp[label] = 1
-    else
-	existingProp[label]++
+    if (!existingProp[label]) existingProp[label] = 1
+    else existingProp[label]++
     var sign = 1
     if (existingProp[label]%2==0) sign = -1    
     if (ox1==ox2 && y1==y2) my = my + (sign*100)
@@ -90,7 +92,7 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     pg.appendChild(pline3)
     const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")    
     ptext.innerHTML=pname
-    if (!pname) ptext.innerHTML="New Property"
+    if (!pname) ptext.innerHTML="New Relation"
     ptext.setAttribute("x", mx-10)
     ptext.setAttribute("y", my-10)
     ptext.setAttribute("style", "fill: #254468")
@@ -115,13 +117,14 @@ function changeClassName(el, v){
     const body = document.getElementsByTagName("BODY")[0]
     const ndiv = document.createElement("div")
     const pp = el.parentNode    
-    ndiv.setAttribute("style", "position:fixed; top: 100px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
+    ndiv.setAttribute("style", "position:fixed; top: 20px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
     ndiv.setAttribute("id", "diag_n_"+pp.id)
     ndiv.setAttribute("class", "diag")    
     const inputtext = document.createElement("input")
     inputtext.setAttribute("type", "text")
-    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;")
-    inputtext.setAttribute("placeholder", "class name")
+    inputtext.setAttribute("style", "width: 95%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px; font-size:120%")
+    inputtext.setAttribute("placeholder", "concept name")
+    inputtext.setAttribute("id", "class_name_input")
     if (v) inputtext.setAttribute("value", v)
     inputtext.onchange = function() {
         const litMap = { 
@@ -145,42 +148,73 @@ function changeClassName(el, v){
         el.setAttribute("y", my+(clth/4))
         p.setAttribute("rx", (cltl/2)+20)
         p.setAttribute("ry", (clth/2)+20)
-	    p.setAttribute("fill", isLiteral ? litColour : classColour);
+	    // p.setAttribute("fill", isLiteral ? litColour : classColour);
 	    p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
-        ndiv.remove()
+        // ndiv.remove()
     }
     const message = document.createElement("p")
     message.setAttribute("class", "message")
-    message.innerHTML='Type or select <a href="#"><i>string</i></a>, <a href="#"><i>str</i></a>, <a href="#"><i>integer</i></a>, <a href="#"><i>int</i></a>, <a href="#"><i>float</i></a>, or <a href="#"><i>double</i></a> to refer to a literal of a specific datatype'
-    var links = message.getElementsByTagName('a')
-    for (var l in links) links[l].onclick = function(e){
-        	preventDefaults(e)
-        	inputtext.value = e.target.textContent
-        	inputtext.onchange()
-    }
+    message.innerHTML='Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i> or <i>float</i> if this is a datatype rather than a concept.'
+    // this was not working...
+    // var links = message.getElementsByTagName('a')
+    // for (var l in links) links[l].onclick = function(e){
+    //    	preventDefaults(e)
+    //    	inputtext.value = e.target.textContent
+    //    	inputtext.onchange()
+    //}
 
     const dl = document.createElement("a")
     dl.href= "javascript:deleteClass('"+pp.id+"');"
-    dl.innerHTML = "delete class"
+    dl.innerHTML = "delete"
+    dl.setAttribute("class", "delete_button")
+    dl.id = "delete_class_button"
+    if (!v) dl.style="display:none;"
+
+    const ca = document.createElement("a")
+    if (!v) ca.href= "javascript:deleteClass('"+pp.id+"');"
+    else ca.href= "javascript:cancelClass('"+v+"');"
+    ca.innerHTML = "cancel"
+    ca.setAttribute("class", "cancel_button")
+    ca.id = "cancel_class_button"
+
+    const dob = document.createElement("a")
+    dob.href= "javascript:closeDiag();"
+    dob.innerHTML = "done"
+    dob.setAttribute("class", "done_button")
+  
     ndiv.appendChild(inputtext)
     ndiv.appendChild(message)    
+    ndiv.appendChild(dob)
+    ndiv.appendChild(ca)
     ndiv.appendChild(dl)
     body.appendChild(ndiv)
     inputtext.focus()
 }
+
+function cancelClass(v){
+    console.log(v)
+    document.getElementById("class_name_input").value = v
+    document.getElementById("class_name_input").onchange()
+    closeDiag()  
+}
+
+function closeDiag(){
+    document.getElementsByClassName('diag')[0].remove()
+}
+
 function changePropertyName(el, v){
     var diags = document.getElementsByClassName('diag')
     if (diags.length!=0) diags[0].remove()
     const body = document.getElementsByTagName("BODY")[0]
     const ndiv = document.createElement("div")
     const pp = el.parentNode
-    ndiv.setAttribute("style", "position:fixed; top: 100px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
+    ndiv.setAttribute("style", "position:fixed; top: 20px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px")
     ndiv.setAttribute("id", "diag_n_"+pp.id)
     ndiv.setAttribute("class", "diag")    
     const inputtext = document.createElement("input")
     inputtext.setAttribute("type", "text")
-    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;")
-    inputtext.setAttribute("placeholder", "property name")
+    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;font-size: 120%")
+    inputtext.setAttribute("placeholder", "relation name")
     if (v){
 	inputtext.setAttribute("value", v)
     }
@@ -201,11 +235,11 @@ function changePropertyName(el, v){
         var clth = el.getBBox().height      
         el.setAttribute("x", mx-10-(cltl/2))
         el.setAttribute("y", my-10+(clth/4))
-	ndiv.remove()
+	// ndiv.remove()
 	  }
     const message = document.createElement("p")
     message.setAttribute("class", "message")
-    message.innerHTML="Type or select <a href=\"#\"><i>subClassOf</i></a> or <a href=\"#\"><i>isa</i></a> to create a subclass relation."
+    message.innerHTML="Type <i>isa</i> for a subconcept (between concept) or a type (between individual and concept) relation."
     var links = message.getElementsByTagName('a')
     for (var l in links) links[l].onclick = function(e){
         	preventDefaults(e)
@@ -215,9 +249,27 @@ function changePropertyName(el, v){
     
     const dl = document.createElement("a")
     dl.href= "javascript:deleteProperty('"+pp.id+"');"
-    dl.innerHTML = "delete property"
+    dl.innerHTML = "delete"
+    dl.setAttribute("class", "delete_button")
+    dl.id = "delete_prop_button"
+    if (!v) dl.style="display:none;"
+
+    const ca = document.createElement("a")
+    if (!v) ca.href= "javascript:deleteProperty('"+pp.id+"');"
+    else ca.href= "javascript:cancelProperty('"+v+"');"
+    ca.innerHTML = "cancel"
+    ca.setAttribute("class", "cancel_button")
+    ca.id = "cancel_property_button"
+
+    const dob = document.createElement("a")
+    dob.href= "javascript:closeDiag();"
+    dob.innerHTML = "done"
+    dob.setAttribute("class", "done_button")
+  
     ndiv.appendChild(inputtext)
     ndiv.appendChild(message)
+    ndiv.appendChild(dob)
+    ndiv.appendChild(ca)
     ndiv.appendChild(dl)
     body.appendChild(ndiv)
     inputtext.focus()    

@@ -11,4 +11,4 @@ do
     else
 	echo "$line"
     fi
-done < owbo.html
+done < base.html

@@ -90,9 +90,9 @@ function class_clicked(el){
 	    creating_prop = true
 	    prop_origin = el
 	    const txt = document.createElement("div")
-	    txt.setAttribute("style", "position:fixed; bottom: 20px; left:20%; text-align: center; width: 60%;")
+	    txt.setAttribute("style", "position:fixed; bottom: 25px; left:20%; text-align: center; width: 60%;")
 	    txt.setAttribute("id","prop_cr_message")
-	    txt.innerHTML="Creating a property. Select the destination class (or click/tap in white space to cancel)."
+	    txt.innerHTML="Creating a relation. Select the destination concept (or click/tap in white space to cancel)."
 	    document.getElementsByTagName("BODY")[0].appendChild(txt);
 	}
     }

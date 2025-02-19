@@ -2,25 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="utf-8"/>
-    <title>OWBO - Ontology White Board</title>
+    <title>OWBO</title>
     <style>
+* {font-family: sans-serif; }
 #drop-area { border: 2px dashed #ccc; border-radius: 10px; display:inline-block; margin-top:5px; padding:10px; width:300px }
 #drop-area.highlight { border-color: purple }
 #onto-name { padding: 5px 2px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468; text-align:right }
 .owbo_button { background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none }
 .owbo_button:hover { background: #111 }
-.owbo_class, .owbo_literal { cursor:pointer }
+.owbo_class, .owbo_literal { cursor:pointer; fill:#cde }
 .owbo_class { stroke-width:0px; stroke:#000 }
 .owbo_class:hover, .owbo_literal:hover { stroke-width:1.5px; stroke:#f00 }
-.owbo_class:hover { fill:#BDE3EE }
-.owbo_literal { stroke-width:1px; stroke:#254468 }
+.owbo_class:hover { fill:#cde; color:#fff }
+.owbo_literal { stroke-width:1px; stroke:#254468; fill: #fff }
 .owbo_class_name { cursor:text }
 .topnav { background-color: #cde; font-family: sans-serif; overflow: hidden; padding: 5px }
-    </style>
+.done_button {background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
+.cancel_button {background: #cde; border-radius: 5px; color: #444; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
+.delete_button {background: #fff; border-radius: 5px; border: 1px #444 solid; color: #444; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
+
+</style>
   </head>
   <body style="margin:0">
     <!-- top bar -->
-    <div class="topnav" id="functions">
+    <!-- <div class="topnav" id="functions">
       <a class="owbo_button" href="javascript:showPrefixes();" title="Show prefix mappings">prefixes</a>      
       <input id="onto-name" type="text" placeholder="ontology filename" value="onto" size="16"/><span style="font-family: sans-serif;">&nbsp;.ttl</span>
       <a class="owbo_button" href="javascript:save();" title="Save to your device as Turtle file">download</a> 
@@ -29,11 +34,11 @@
         <input type="file" id="file-input" style="color:#254468; display:none"/>
         <label class="owbo_button" for="file-input">Click or drag</label>
       </div>
-    </div>
+    </div> -->
     <!-- prefix dialog -->
     <div id="prefixes" style="display: none; position: fixed; top: 20%; left: 20%; width: 60%; background: white;">
       <textarea id="prefixes_ta" style="width: 100%; height: 200px; border-radius: 5px; color: #254468">
-@base <http://example.org/> .
+@base <https://symb.olic.ai/owbo_net#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -47,18 +52,20 @@
  
     <!-- footer -->      
     <div style="position: fixed; bottom: 10px; left: 10px;">
-      <span style="color:#888">OWBO is open source.</span> <a href="https://github.com/mdaquin/OWBO" target="_blank">GitHub</a>
+      <span style="color:#888">
+        To save the current network, save the page (ctrl-s). You can also <a style="color: #444" href="javascript:save();">export the network as a Turtle file</a>. 
+        OWBO is open source.</span> <a style="color: #444" href="https://github.com/mdaquin/OWBO" target="_blank">GitHub</a>
     </div>
     <!-- help button and dialog -->
     <div style="position: fixed; bottom: 10px; right: 10px;" id="help_button"><a href="javascript:showHelp();" style="color: #254468; font-size: 30px; text-decoration: none;">?</a></div>
-    <div id="help_dialog" style="display: none; color: #254468; border: 1px #254468 solid; border-radius: 5px; position: fixed; bottom: 10px; right: 50px; max-width: 50vw; padding: 10px;">
+    <div id="help_dialog" style="display: none; color: #254468; border: 1px #254468 solid; border-radius: 5px; position: fixed; bottom: 10px; right: 50px; max-width: 50vw; padding: 20px;">
 	  <h3 style="margin-left:15px">Commands</h3>
 	  <ul>
-	    <li><strong>Create class</strong>: Click/tap on the whiteboard</li>
-	    <li><strong>Edit class</strong>: Click/tap on class name to rename or delete it</li>
-	    <li><strong>Create property</strong>: Click/tap on class (not on name)</li>
-	    <li><strong>Edit property</strong>: Click/tap on property name to rename or delete it</li>
-	    <li><strong>Move class</strong>: Long click/press, then release to start dragging</li>
+	    <li><strong>Create concept</strong>: Click/tap on the whiteboard</li>
+	    <li><strong>Edit concept</strong>: Click/tap on concept name to rename or delete it</li>
+	    <li><strong>Create relation</strong>: Click/tap on concept (not on name)</li>
+	    <li><strong>Edit property</strong>: Click/tap on relation name to rename or delete it</li>
+	    <li><strong>Move concept</strong>: Long click/press, then release to start dragging</li>
 	  </ul>
     </div>
     
@@ -188,6 +195,7 @@ function save() {
     for (var g in gs){
 	if (gs[g] && gs[g].getAttribute){
 	    var id = gs[g].getAttribute('id')
+		console.log(id)
 	    if (id.indexOf("property")==0){
 		var cl = gs[g].getAttribute("class").split(' ')
 		properties[id] = {}
@@ -215,7 +223,7 @@ function save() {
 	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
     }
     var file = new Blob([data], {type: "text/plain"});
-    var filename = document.getElementById("onto-name").value+".ttl"
+    var filename = "owbo_export.ttl" // document.getElementById("onto-name").value+".ttl"
     if (window.navigator.msSaveOrOpenBlob) {
         window.navigator.msSaveOrOpenBlob(file, filename);
     } else { 
@@ -239,33 +247,7 @@ function toUri(s){
     else return '<'+s+'>'
 }
 </script>
-<script>
-let dropArea = document.getElementById('drop-area')
-;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-  dropArea.addEventListener(eventName, preventDefaults, false)
-})
-function preventDefaults (e) {
-  e.preventDefault()
-  e.stopPropagation()
-}
-;['dragenter', 'dragover'].forEach(eventName => {
-  dropArea.addEventListener(eventName, highlight, false)
-})
-;['dragleave', 'drop'].forEach(eventName => {
-  dropArea.addEventListener(eventName, unhighlight, false)
-})
-function highlight(e){dropArea.classList.add('highlight')}
-function unhighlight(e){dropArea.classList.remove('highlight')}
-dropArea.addEventListener('drop', handleDrop, false)
-function handleDrop(e) {
-  let dt = e.dataTransfer
-  let files = dt.files
-  handleFiles(files, e)
-}
-function handleFiles(files, e) {
-  ([...files]).forEach(loadFile)
-}
-</script>
+ <!-- <szzcript src="draganddrop.js"></script> -->
 <script>
 function svg_clicked(){    
     hideHelp();
@@ -359,9 +341,9 @@ function class_clicked(el){
 	    creating_prop = true
 	    prop_origin = el
 	    const txt = document.createElement("div")
-	    txt.setAttribute("style", "position:fixed; bottom: 20px; left:20%; text-align: center; width: 60%;")
+	    txt.setAttribute("style", "position:fixed; bottom: 25px; left:20%; text-align: center; width: 60%;")
 	    txt.setAttribute("id","prop_cr_message")
-	    txt.innerHTML="Creating a property. Select the destination class (or click/tap in white space to cancel)."
+	    txt.innerHTML="Creating a relation. Select the destination concept (or click/tap in white space to cancel)."
 	    document.getElementsByTagName("BODY")[0].appendChild(txt);
 	}
     }
@@ -391,6 +373,10 @@ function hideHelp(){
 }
 </script>
 <script>
+var clcount=0;
+var pcount=0;
+var existingProp = {}
+
 function addClass(mx,my,name){
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
     clg.setAttribute("id", "class_"+(clcount++))  
@@ -407,7 +393,7 @@ function addClass(mx,my,name){
     clcir.onpointerup = function() {class_clicked(this);}
     clg.appendChild(clcir)
     const cltext = document.createElementNS("http://www.w3.org/2000/svg", "text")
-    clname = "New Class"
+    clname = "New Concept"
     if (name) clname = name
     cltext.innerHTML= clname
     cltext.setAttribute("x", mx)
@@ -421,10 +407,10 @@ function addClass(mx,my,name){
     cltext.setAttribute("y", my+(clth/4))
     cltext.setAttribute("class", "owbo_class_name")
     cltext.onclick = function() { class_name_clicked(this) }
-    clcir.setAttribute("fill", classColour)
+    // clcir.setAttribute("fill", classColour)
     if (name) {
         let isLiteral = ['string','integer','int','float'].includes(name);
-	    clcir.setAttribute("fill", isLiteral ? litColour : classColour);
+	    // clcir.setAttribute("fill", isLiteral ? litColour : classColour);
 	    clcir.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
     } else changeClassName(cltext, undefined)
     return "class_"+(clcount-1)
@@ -442,10 +428,8 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     var l = Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2))
     var cosa = (x2-x1)/l
     var sina = (y2-y1)/l    
-    if (!existingProp[label])
-	existingProp[label] = 1
-    else
-	existingProp[label]++
+    if (!existingProp[label]) existingProp[label] = 1
+    else existingProp[label]++
     var sign = 1
     if (existingProp[label]%2==0) sign = -1    
     if (ox1==ox2 && y1==y2) my = my + (sign*100)
@@ -483,7 +467,7 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     pg.appendChild(pline3)
     const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")    
     ptext.innerHTML=pname
-    if (!pname) ptext.innerHTML="New Property"
+    if (!pname) ptext.innerHTML="New Relation"
     ptext.setAttribute("x", mx-10)
     ptext.setAttribute("y", my-10)
     ptext.setAttribute("style", "fill: #254468")
@@ -508,13 +492,14 @@ function changeClassName(el, v){
     const body = document.getElementsByTagName("BODY")[0]
     const ndiv = document.createElement("div")
     const pp = el.parentNode    
-    ndiv.setAttribute("style", "position:fixed; top: 100px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
+    ndiv.setAttribute("style", "position:fixed; top: 20px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
     ndiv.setAttribute("id", "diag_n_"+pp.id)
     ndiv.setAttribute("class", "diag")    
     const inputtext = document.createElement("input")
     inputtext.setAttribute("type", "text")
-    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;")
-    inputtext.setAttribute("placeholder", "class name")
+    inputtext.setAttribute("style", "width: 95%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px; font-size:120%")
+    inputtext.setAttribute("placeholder", "concept name")
+    inputtext.setAttribute("id", "class_name_input")
     if (v) inputtext.setAttribute("value", v)
     inputtext.onchange = function() {
         const litMap = { 
@@ -538,42 +523,73 @@ function changeClassName(el, v){
         el.setAttribute("y", my+(clth/4))
         p.setAttribute("rx", (cltl/2)+20)
         p.setAttribute("ry", (clth/2)+20)
-	    p.setAttribute("fill", isLiteral ? litColour : classColour);
+	    // p.setAttribute("fill", isLiteral ? litColour : classColour);
 	    p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
-        ndiv.remove()
+        // ndiv.remove()
     }
     const message = document.createElement("p")
     message.setAttribute("class", "message")
-    message.innerHTML='Type or select <a href="#"><i>string</i></a>, <a href="#"><i>str</i></a>, <a href="#"><i>integer</i></a>, <a href="#"><i>int</i></a>, <a href="#"><i>float</i></a>, or <a href="#"><i>double</i></a> to refer to a literal of a specific datatype'
-    var links = message.getElementsByTagName('a')
-    for (var l in links) links[l].onclick = function(e){
-        	preventDefaults(e)
-        	inputtext.value = e.target.textContent
-        	inputtext.onchange()
-    }
+    message.innerHTML='Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i> or <i>float</i> if this is a datatype rather than a concept.'
+    // this was not working...
+    // var links = message.getElementsByTagName('a')
+    // for (var l in links) links[l].onclick = function(e){
+    //    	preventDefaults(e)
+    //    	inputtext.value = e.target.textContent
+    //    	inputtext.onchange()
+    //}
 
     const dl = document.createElement("a")
     dl.href= "javascript:deleteClass('"+pp.id+"');"
-    dl.innerHTML = "delete class"
+    dl.innerHTML = "delete"
+    dl.setAttribute("class", "delete_button")
+    dl.id = "delete_class_button"
+    if (!v) dl.style="display:none;"
+
+    const ca = document.createElement("a")
+    if (!v) ca.href= "javascript:deleteClass('"+pp.id+"');"
+    else ca.href= "javascript:cancelClass('"+v+"');"
+    ca.innerHTML = "cancel"
+    ca.setAttribute("class", "cancel_button")
+    ca.id = "cancel_class_button"
+
+    const dob = document.createElement("a")
+    dob.href= "javascript:closeDiag();"
+    dob.innerHTML = "done"
+    dob.setAttribute("class", "done_button")
+  
     ndiv.appendChild(inputtext)
     ndiv.appendChild(message)    
+    ndiv.appendChild(dob)
+    ndiv.appendChild(ca)
     ndiv.appendChild(dl)
     body.appendChild(ndiv)
     inputtext.focus()
 }
+
+function cancelClass(v){
+    console.log(v)
+    document.getElementById("class_name_input").value = v
+    document.getElementById("class_name_input").onchange()
+    closeDiag()  
+}
+
+function closeDiag(){
+    document.getElementsByClassName('diag')[0].remove()
+}
+
 function changePropertyName(el, v){
     var diags = document.getElementsByClassName('diag')
     if (diags.length!=0) diags[0].remove()
     const body = document.getElementsByTagName("BODY")[0]
     const ndiv = document.createElement("div")
     const pp = el.parentNode
-    ndiv.setAttribute("style", "position:fixed; top: 100px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
+    ndiv.setAttribute("style", "position:fixed; top: 20px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px")
     ndiv.setAttribute("id", "diag_n_"+pp.id)
     ndiv.setAttribute("class", "diag")    
     const inputtext = document.createElement("input")
     inputtext.setAttribute("type", "text")
-    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;")
-    inputtext.setAttribute("placeholder", "property name")
+    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;font-size: 120%")
+    inputtext.setAttribute("placeholder", "relation name")
     if (v){
 	inputtext.setAttribute("value", v)
     }
@@ -594,11 +610,11 @@ function changePropertyName(el, v){
         var clth = el.getBBox().height      
         el.setAttribute("x", mx-10-(cltl/2))
         el.setAttribute("y", my-10+(clth/4))
-	ndiv.remove()
+	// ndiv.remove()
 	  }
     const message = document.createElement("p")
     message.setAttribute("class", "message")
-    message.innerHTML="Type or select <a href=\"#\"><i>subClassOf</i></a> or <a href=\"#\"><i>isa</i></a> to create a subclass relation."
+    message.innerHTML="Type <i>isa</i> for a subconcept (between concept) or a type (between individual and concept) relation."
     var links = message.getElementsByTagName('a')
     for (var l in links) links[l].onclick = function(e){
         	preventDefaults(e)
@@ -608,9 +624,27 @@ function changePropertyName(el, v){
     
     const dl = document.createElement("a")
     dl.href= "javascript:deleteProperty('"+pp.id+"');"
-    dl.innerHTML = "delete property"
+    dl.innerHTML = "delete"
+    dl.setAttribute("class", "delete_button")
+    dl.id = "delete_prop_button"
+    if (!v) dl.style="display:none;"
+
+    const ca = document.createElement("a")
+    if (!v) ca.href= "javascript:deleteProperty('"+pp.id+"');"
+    else ca.href= "javascript:cancelProperty('"+v+"');"
+    ca.innerHTML = "cancel"
+    ca.setAttribute("class", "cancel_button")
+    ca.id = "cancel_property_button"
+
+    const dob = document.createElement("a")
+    dob.href= "javascript:closeDiag();"
+    dob.innerHTML = "done"
+    dob.setAttribute("class", "done_button")
+  
     ndiv.appendChild(inputtext)
     ndiv.appendChild(message)
+    ndiv.appendChild(dob)
+    ndiv.appendChild(ca)
     ndiv.appendChild(dl)
     body.appendChild(ndiv)
     inputtext.focus()    
@@ -637,8 +671,6 @@ function deleteProperty(id){
   <script>	    
 // base / globals
 var events = []
-var classColour = "#D5EAF0"
-var litColour = "#fff"
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
 svg.setAttribute("width", "100%")
 svg.setAttribute("height", "100%")
@@ -646,17 +678,12 @@ svg.onmousemove = function() {classDragOver()};
 svg.onclick = function() {svg_clicked()};
 (function() {
     document.getElementById("owbo_board").appendChild(svg);
-    document.getElementById("file-input")
-	.addEventListener("change", load, false);
+    // document.getElementById("file-input") .addEventListener("change", load, false);
 })();
 
-// variables
 var creating_prop = false;
-var prop_origin = undefined;
-var pcount=0;
-var clcount=0;
-    var existingProp = {}
-    
+var prop_origin = null;
+
   </script>    
 
 </html>

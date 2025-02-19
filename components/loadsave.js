@@ -121,6 +121,7 @@ function save() {
     for (var g in gs){
 	if (gs[g] && gs[g].getAttribute){
 	    var id = gs[g].getAttribute('id')
+		console.log(id)
 	    if (id.indexOf("property")==0){
 		var cl = gs[g].getAttribute("class").split(' ')
 		properties[id] = {}
@@ -148,7 +149,7 @@ function save() {
 	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
     }
     var file = new Blob([data], {type: "text/plain"});
-    var filename = document.getElementById("onto-name").value+".ttl"
+    var filename = "owbo_export.ttl" // document.getElementById("onto-name").value+".ttl"
     if (window.navigator.msSaveOrOpenBlob) {
         window.navigator.msSaveOrOpenBlob(file, filename);
     } else { 

@@ -2,25 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="utf-8"/>
-    <title>OWBO - Ontology White Board</title>
+    <title>OWBO</title>
     <style>
+* {font-family: sans-serif; }
 #drop-area { border: 2px dashed #ccc; border-radius: 10px; display:inline-block; margin-top:5px; padding:10px; width:300px }
 #drop-area.highlight { border-color: purple }
 #onto-name { padding: 5px 2px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468; text-align:right }
 .owbo_button { background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none }
 .owbo_button:hover { background: #111 }
-.owbo_class, .owbo_literal { cursor:pointer }
+.owbo_class, .owbo_literal { cursor:pointer; fill:#cde }
 .owbo_class { stroke-width:0px; stroke:#000 }
 .owbo_class:hover, .owbo_literal:hover { stroke-width:1.5px; stroke:#f00 }
-.owbo_class:hover { fill:#BDE3EE }
-.owbo_literal { stroke-width:1px; stroke:#254468 }
+.owbo_class:hover { fill:#cde; color:#fff }
+.owbo_literal { stroke-width:1px; stroke:#254468; fill: #fff }
 .owbo_class_name { cursor:text }
 .topnav { background-color: #cde; font-family: sans-serif; overflow: hidden; padding: 5px }
-    </style>
+.done_button {background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
+.cancel_button {background: #cde; border-radius: 5px; color: #444; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
+.delete_button {background: #fff; border-radius: 5px; border: 1px #444 solid; color: #444; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
+
+</style>
   </head>
   <body style="margin:0">
     <!-- top bar -->
-    <div class="topnav" id="functions">
+    <!-- <div class="topnav" id="functions">
       <a class="owbo_button" href="javascript:showPrefixes();" title="Show prefix mappings">prefixes</a>      
       <input id="onto-name" type="text" placeholder="ontology filename" value="onto" size="16"/><span style="font-family: sans-serif;">&nbsp;.ttl</span>
       <a class="owbo_button" href="javascript:save();" title="Save to your device as Turtle file">download</a> 
@@ -29,11 +34,11 @@
         <input type="file" id="file-input" style="color:#254468; display:none"/>
         <label class="owbo_button" for="file-input">Click or drag</label>
       </div>
-    </div>
+    </div> -->
     <!-- prefix dialog -->
     <div id="prefixes" style="display: none; position: fixed; top: 20%; left: 20%; width: 60%; background: white;">
       <textarea id="prefixes_ta" style="width: 100%; height: 200px; border-radius: 5px; color: #254468">
-@base <http://example.org/> .
+@base <https://symb.olic.ai/owbo_net#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -47,33 +52,33 @@
  
     <!-- footer -->      
     <div style="position: fixed; bottom: 10px; left: 10px;">
-      <span style="color:#888">OWBO is open source.</span> <a href="https://github.com/mdaquin/OWBO" target="_blank">GitHub</a>
+      <span style="color:#888">
+        To save the current network, save the page (ctrl-s). You can also <a style="color: #444" href="javascript:save();">export the network as a Turtle file</a>. 
+        OWBO is open source.</span> <a style="color: #444" href="https://github.com/mdaquin/OWBO" target="_blank">GitHub</a>
     </div>
     <!-- help button and dialog -->
     <div style="position: fixed; bottom: 10px; right: 10px;" id="help_button"><a href="javascript:showHelp();" style="color: #254468; font-size: 30px; text-decoration: none;">?</a></div>
-    <div id="help_dialog" style="display: none; color: #254468; border: 1px #254468 solid; border-radius: 5px; position: fixed; bottom: 10px; right: 50px; max-width: 50vw; padding: 10px;">
+    <div id="help_dialog" style="display: none; color: #254468; border: 1px #254468 solid; border-radius: 5px; position: fixed; bottom: 10px; right: 50px; max-width: 50vw; padding: 20px;">
 	  <h3 style="margin-left:15px">Commands</h3>
 	  <ul>
-	    <li><strong>Create class</strong>: Click/tap on the whiteboard</li>
-	    <li><strong>Edit class</strong>: Click/tap on class name to rename or delete it</li>
-	    <li><strong>Create property</strong>: Click/tap on class (not on name)</li>
-	    <li><strong>Edit property</strong>: Click/tap on property name to rename or delete it</li>
-	    <li><strong>Move class</strong>: Long click/press, then release to start dragging</li>
+	    <li><strong>Create concept</strong>: Click/tap on the whiteboard</li>
+	    <li><strong>Edit concept</strong>: Click/tap on concept name to rename or delete it</li>
+	    <li><strong>Create relation</strong>: Click/tap on concept (not on name)</li>
+	    <li><strong>Edit property</strong>: Click/tap on relation name to rename or delete it</li>
+	    <li><strong>Move concept</strong>: Long click/press, then release to start dragging</li>
 	  </ul>
     </div>
     
   </body> 
 
   <script src="loadsave.js"></script>
-  <script src="draganddrop.js"></script>
+ <!-- <szzcript src="draganddrop.js"></script> -->
   <script src="events.js"></script>  
   <script src="model.js"></script>
   
   <script>	    
 // base / globals
 var events = []
-var classColour = "#D5EAF0"
-var litColour = "#fff"
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
 svg.setAttribute("width", "100%")
 svg.setAttribute("height", "100%")
@@ -81,17 +86,12 @@ svg.onmousemove = function() {classDragOver()};
 svg.onclick = function() {svg_clicked()};
 (function() {
     document.getElementById("owbo_board").appendChild(svg);
-    document.getElementById("file-input")
-	.addEventListener("change", load, false);
+    // document.getElementById("file-input") .addEventListener("change", load, false);
 })();
 
-// variables
 var creating_prop = false;
-var prop_origin = undefined;
-var pcount=0;
-var clcount=0;
-    var existingProp = {}
-    
+var prop_origin = null;
+
   </script>    
 
 </html>
