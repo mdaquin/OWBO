@@ -1,18 +1,12 @@
-# OWBO - Ontology White Board
+# OWBO - Semantic Network editor
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Ontologies are formal conceptual models of a domain, which can be used to structure, understand and provide meaning to data. Existing ontology editors enable users to write complex models, if tending to be very complicated. However, it is often the case that, at least when starting an ontology, one mostly only need basic conceptual constructs, i.e. the ability to create classes and to relate them through relations. In this case, drawing them on a white board is often more efficient than trying to implement such an initial "skeleton" ontology directly in the ontology editor. 
+OWBO is a very simple editor of semantic network. Those are diagrams where nodes are concepts, and edges are relations between these concepts. By simply cliking in the white space, connecting concepts and draging them arround, OWBO provides a very simple interface to create such diagrams.
 
-OWBO aims to provide basic support for this. It makes it possible to create basic conceptual structures by simply adding and naming classes, and relating them with relations. Clicking in a white space creates a class; clicking on a class starts a relation; and clicking on a second class ends it. 
+A key feature of OWBO is that it is entirely contained in one single HTML file. It can work locally and offline since it has no external dependencies. In addition, this means that Saving an OWBO semantic network simply means saving that file (crtl-s in your browser). Once saved, you can simply reload that HTML file and carry on where you left off (the features of the editors are save with the file).
 
-An interesting technical aspect of OWBO is that it is entirely contained in one HTML file. The drawing of the diagram is done through SVG, and the interaction through JavaScript. It does not rely on any external libraries or dependencies, or even require an internet connection. This means that starting designing an ontology could not be simpler: Open the file in a browser and start clicking (or even tapping if you have a touch screen or are creating ontologies on a mobile device). 
-
-## Features
-* One single HTML file: works entirely offline with no external dependencies
-* Load/save/drag files in simplified [Turtle](https://www.w3.org/TR/turtle/) format with custom prefix mappings
-* Basic editing of named classes, properties and standard literals (string, integer, float)
-* Supports class subsumption and property domains and ranges
+In addition, the semantic network can be exported in the RDF Schema turtle format and be worked on, as an ontology, in editors such as Protégé. 
 
 ## Usage
 

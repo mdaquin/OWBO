@@ -1,8 +1,8 @@
-var clcount=0;
-var pcount=0;
+
 var existingProp = {}
 
 function addClass(mx,my,name){
+    clcount = document.getElementsByClassName("owbo_class").length
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
     clg.setAttribute("id", "class_"+(clcount++))  
     const clcir = document.createElementNS("http://www.w3.org/2000/svg", "ellipse")
@@ -12,10 +12,12 @@ function addClass(mx,my,name){
     clcir.setAttribute("ry", "30")
     clcir.setAttribute("draggable", "true")    
     clcir.setAttribute("class", "owbo_class")
-    clcir.onpointerdown = function() {classDragStart(this);}
-    clcir.onmousemove = function() {classDragOver(this);}
+    clcir.id = clg.id+"_circle"
+    clcir.setAttribute("onpointerdown", "classDragStart('"+clg.id+"_circle')")
+    clcir.setAttribute("onpointermove", "classDragOver()")
+    clcir.setAttribute("onmousemove", "classDragOver()")
 //    clcir.onmouseleave = function() {class_clicked(this);}
-    clcir.onpointerup = function() {class_clicked(this);}
+    clcir.setAttribute("onpointerup", "class_clicked('"+clg.id+"_circle')")
     clg.appendChild(clcir)
     const cltext = document.createElementNS("http://www.w3.org/2000/svg", "text")
     clname = "New Concept"
@@ -31,7 +33,8 @@ function addClass(mx,my,name){
     cltext.setAttribute("x", mx-(cltl/2))
     cltext.setAttribute("y", my+(clth/4))
     cltext.setAttribute("class", "owbo_class_name")
-    cltext.onclick = function() { class_name_clicked(this) }
+    cltext.id = clg.id+"_name"
+    cltext.setAttribute("onclick", "class_name_clicked('"+clg.id+"_name')")
     // clcir.setAttribute("fill", classColour)
     if (name) {
         let isLiteral = ['string','integer','int','float'].includes(name);
@@ -42,6 +45,7 @@ function addClass(mx,my,name){
 }
 
 function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
+    pcount=document.getElementsByClassName("owbo_property").length
     var x1 = ox1; var x2 = ox2;
     if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
     const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
@@ -103,7 +107,8 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     ptext.setAttribute("x", mx-10-(cltl/2))
     ptext.setAttribute("y", my-10+(clth/4))
     ptext.setAttribute("class", "owbo_property_name")
-    ptext.onclick = function() {property_name_clicked(this)}
+    ptext.id = pg.id+"_name"
+    ptext.setAttribute("onclick", "property_name_clicked('"+pg.id+"_name')")
     if (!pname)
 	changePropertyName(ptext, undefined)
     else if (pname=="isa"){
@@ -240,12 +245,12 @@ function changePropertyName(el, v){
     const message = document.createElement("p")
     message.setAttribute("class", "message")
     message.innerHTML="Type <i>isa</i> for a subconcept (between concept) or a type (between individual and concept) relation."
-    var links = message.getElementsByTagName('a')
-    for (var l in links) links[l].onclick = function(e){
-        	preventDefaults(e)
-        	inputtext.value = e.target.textContent
-        	inputtext.onchange()
-    }
+    // var links = message.getElementsByTagName('a')
+    // for (var l in links) links[l].onclick = function(e){
+    //     	preventDefaults(e)
+    //     	inputtext.value = e.target.textContent
+    //     	inputtext.onchange()
+    // }
     
     const dl = document.createElement("a")
     dl.href= "javascript:deleteProperty('"+pp.id+"');"

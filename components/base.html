@@ -48,7 +48,8 @@
     </div>
     
     <!-- actual drawing area --> 
-    <div id="owbo_board" style="cursor:crosshair; width: 100%; height: 90vh"></div> 
+    <div id="owbo_board" style="cursor:crosshair; width: 100%; height: 90vh">
+    </div> 
  
     <!-- footer -->      
     <div style="position: fixed; bottom: 10px; left: 10px;">
@@ -76,14 +77,16 @@
   <script src="events.js"></script>  
   <script src="model.js"></script>
   
-  <script>	    
+  <script>	
 // base / globals
 var events = []
-const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+var svg = document.getElementsByTagName("svg")
+if (svg.length != 0) svg = svg[0]
+else svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
 svg.setAttribute("width", "100%")
 svg.setAttribute("height", "100%")
-svg.onmousemove = function() {classDragOver()};
-svg.onclick = function() {svg_clicked()};
+svg.setAttribute("onmousemove", "classDragOver()")
+svg.setAttribute("onclick", "svg_clicked()");
 (function() {
     document.getElementById("owbo_board").appendChild(svg);
     // document.getElementById("file-input") .addEventListener("change", load, false);

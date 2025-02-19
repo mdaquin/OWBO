@@ -17,7 +17,8 @@ var dragging = false
 var timeStarted
 var deltaX
 var deltaY
-function classDragStart(el){
+function classDragStart(eln){
+	el = document.getElementById(eln)	
     timeStarted = new Date().getTime()
     if (!dragging){
 	classDragged = el
@@ -38,8 +39,9 @@ function classDragOver(){
         tel.setAttribute("y", my+(clth/4))
     }
 }
-function class_clicked(el){
-    if (new Date().getTime() - timeStarted > 300) {
+function class_clicked(eln){
+	el = document.getElementById(eln)
+	if (new Date().getTime() - timeStarted > 300) {
 	dragging = true
         events.push({type: "click", caughtby: "class__clicked", time: new Date().getTime()})	
 	var clname = el.parentNode.childNodes[1].innerHTML
@@ -97,13 +99,15 @@ function class_clicked(el){
 	}
     }
 }
-function class_name_clicked(el){
+function class_name_clicked(eln){
     events.push({type: "click", caughtby: "class_name_clicked", time: new Date().getTime()})
+	el = document.getElementById(eln)
     changeClassName(el, el.innerHTML)
 }
-function property_name_clicked(el){
+function property_name_clicked(eln){
     events.push({type: "click", caughtby: "property_name_clicked", time: new Date().getTime()})
-    changePropertyName(el, el.innerHTML)
+	el = document.getElementById(eln)
+	changePropertyName(el, el.innerHTML)
 }
 function showPrefixes(){
     if (document.getElementById("prefixes").style.display == "block")
