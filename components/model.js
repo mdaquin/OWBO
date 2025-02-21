@@ -3,6 +3,8 @@ var existingProp = {}
 
 function addClass(mx,my,name){
     clcount = document.getElementsByClassName("owbo_class").length
+    clcount += document.getElementsByClassName("owbo_individual").length
+    clcount += document.getElementsByClassName("owbo_datatype").length
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
     clg.setAttribute("id", "class_"+(clcount++))  
     const clcir = document.createElementNS("http://www.w3.org/2000/svg", "ellipse")
@@ -157,16 +159,55 @@ function changeClassName(el, v){
 	    p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
         // ndiv.remove()
     }
+    // add a three radio buttons for concept, individual and datatype
+    const concept = document.createElement("input")
+    concept.setAttribute("type", "radio")
+    concept.setAttribute("name", "type")
+    concept.setAttribute("value", "concept")
+    concept.setAttribute("id", "concept")
+    concept.setAttribute("checked", "checked")
+    concept.onchange = function() {
+        const elc = document.getElementById(el.id.replace("_name", "_circle"))
+        elc.setAttribute("class", "owbo_class")
+    }
+    const conceptLabel = document.createElement("label")
+    conceptLabel.setAttribute("for", "concept")
+    conceptLabel.innerHTML = "Concept"
+    const individual = document.createElement("input")
+    individual.setAttribute("type", "radio")
+    individual.setAttribute("name", "type")
+    individual.setAttribute("value", "individual")
+    individual.setAttribute("id", "individual")
+    individual.onchange = function() {
+        const elc = document.getElementById(el.id.replace("_name", "_circle"))
+        elc.setAttribute("class", "owbo_individual")
+    }    
+    const individualLabel = document.createElement("label")
+    individualLabel.setAttribute("for", "individual")
+    individualLabel.innerHTML = "Individual"
+    const datatype = document.createElement("input")
+    datatype.setAttribute("type", "radio")
+    datatype.setAttribute("name", "type")
+    datatype.setAttribute("value", "datatype")
+    datatype.setAttribute("id", "datatype")
+    datatype.onchange = function() {
+        const elc = document.getElementById(el.id.replace("_name", "_circle"))
+        elc.setAttribute("class", "owbo_datatype")
+    }
+    const datatypeLabel = document.createElement("label")
+    datatypeLabel.setAttribute("for", "datatype")
+    datatypeLabel.innerHTML = "Datatype"
+
     const message = document.createElement("p")
-    message.setAttribute("class", "message")
-    message.innerHTML='Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i> or <i>float</i> if this is a datatype rather than a concept.'
-    // this was not working...
-    // var links = message.getElementsByTagName('a')
-    // for (var l in links) links[l].onclick = function(e){
-    //    	preventDefaults(e)
-    //    	inputtext.value = e.target.textContent
-    //    	inputtext.onchange()
-    //}
+    message.setAttribute("class", "message")   
+    message.appendChild(concept)
+    message.appendChild(conceptLabel)
+    message.appendChild(individual)
+    message.appendChild(individualLabel)
+    message.appendChild(datatype)
+    message.appendChild(datatypeLabel)
+    
+    //message.innerHTML='Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i> or <i>float</i> if this is a datatype rather than a concept.'
 
     const dl = document.createElement("a")
     dl.href= "javascript:deleteClass('"+pp.id+"');"
