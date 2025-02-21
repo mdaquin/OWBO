@@ -58,12 +58,12 @@ function class_clicked(eln){
 	var props = document.getElementsByClassName("property_"+clid)
 	var toremove = []
 	for(var p in props)
-	    if (typeof props[p].remove == "function") 
-		toremove.push(props[p])	    
+	    if (typeof props[p].remove == "function") toremove.push(props[p])	    
 	for(var e in toremove) {
 	    var classID1 = toremove[e].getAttribute("class").split(" ")[1].substring(9)
 	    var classID2 = toremove[e].getAttribute("class").split(" ")[2].substring(9)	    
-	    var x1 = parseInt(document.getElementById(classID1).childNodes[0].getAttribute("cx"))
+	    console.log(classID1+" "+classID2)
+		var x1 = parseInt(document.getElementById(classID1).childNodes[0].getAttribute("cx"))
 	    var y1 = parseInt(document.getElementById(classID1).childNodes[0].getAttribute("cy"))
 	    var x2 = parseInt(document.getElementById(classID2).childNodes[0].getAttribute("cx"))
 	    var y2 = parseInt(document.getElementById(classID2).childNodes[0].getAttribute("cy"))

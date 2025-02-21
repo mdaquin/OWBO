@@ -39,15 +39,15 @@ function addClass(mx,my,name){
     cltext.setAttribute("onclick", "class_name_clicked('"+clg.id+"_name')")
     // clcir.setAttribute("fill", classColour)
     if (name) {
-        let isLiteral = ['string','integer','int','float'].includes(name);
+        // let isLiteral = ['string','integer','int','float'].includes(name);
 	    // clcir.setAttribute("fill", isLiteral ? litColour : classColour);
-	    clcir.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
+	    clcir.setAttribute("class", "owbo_class") 
     } else changeClassName(cltext, undefined)
     return "class_"+(clcount-1)
 }
 
 function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
-    pcount=document.getElementsByClassName("owbo_property").length
+    pcount=document.getElementsByClassName("owbo_property_name").length
     var x1 = ox1; var x2 = ox2;
     if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
     const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
@@ -134,17 +134,17 @@ function changeClassName(el, v){
     inputtext.setAttribute("id", "class_name_input")
     if (v) inputtext.setAttribute("value", v)
     inputtext.onchange = function() {
-        const litMap = { 
-            'string':'string',
-            'str':'string',
-            'integer':'integer',
-            'int':'integer',
-            'float':'float',
-            'double':'float'
-        };
+        // const litMap = { 
+        //     'string':'string',
+        //     'str':'string',
+        //     'integer':'integer',
+        //     'int':'integer',
+        //     'float':'float',
+        //     'double':'float'
+        // };
         var newname = this.value;
-        var isLiteral = newname.toLowerCase() in litMap;
-        if (isLiteral) { newname = litMap[newname.toLowerCase()] };
+        // var isLiteral = newname.toLowerCase() in litMap;
+        // if (isLiteral) { newname = litMap[newname.toLowerCase()] };
         el.innerHTML = newname
         const p = el.previousSibling
         var mx = parseInt(p.getAttribute("cx"))
@@ -156,18 +156,18 @@ function changeClassName(el, v){
         p.setAttribute("rx", (cltl/2)+20)
         p.setAttribute("ry", (clth/2)+20)
 	    // p.setAttribute("fill", isLiteral ? litColour : classColour);
-	    p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
+	    // p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
         // ndiv.remove()
     }
-    // add a three radio buttons for concept, individual and datatype
+    const elc = document.getElementById(el.id.replace("_name", "_circle"))
     const concept = document.createElement("input")
     concept.setAttribute("type", "radio")
     concept.setAttribute("name", "type")
     concept.setAttribute("value", "concept")
     concept.setAttribute("id", "concept")
-    concept.setAttribute("checked", "checked")
-    concept.onchange = function() {
-        const elc = document.getElementById(el.id.replace("_name", "_circle"))
+    if (elc.getAttribute("class")=="owbo_class")
+        concept.setAttribute("checked", "checked")
+    concept.onchange = function() { 
         elc.setAttribute("class", "owbo_class")
     }
     const conceptLabel = document.createElement("label")
@@ -178,8 +178,9 @@ function changeClassName(el, v){
     individual.setAttribute("name", "type")
     individual.setAttribute("value", "individual")
     individual.setAttribute("id", "individual")
+    if (elc.getAttribute("class")=="owbo_individual")
+        individual.setAttribute("checked", "checked")
     individual.onchange = function() {
-        const elc = document.getElementById(el.id.replace("_name", "_circle"))
         elc.setAttribute("class", "owbo_individual")
     }    
     const individualLabel = document.createElement("label")
@@ -190,8 +191,9 @@ function changeClassName(el, v){
     datatype.setAttribute("name", "type")
     datatype.setAttribute("value", "datatype")
     datatype.setAttribute("id", "datatype")
+    if (elc.getAttribute("class")=="owbo_datatype")
+        datatype.setAttribute("checked", "checked")
     datatype.onchange = function() {
-        const elc = document.getElementById(el.id.replace("_name", "_circle"))
         elc.setAttribute("class", "owbo_datatype")
     }
     const datatypeLabel = document.createElement("label")
@@ -261,6 +263,7 @@ function changePropertyName(el, v){
     inputtext.setAttribute("type", "text")
     inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;font-size: 120%")
     inputtext.setAttribute("placeholder", "relation name")
+    inputtext.setAttribute("id", "property_name_input")
     if (v){
 	inputtext.setAttribute("value", v)
     }
@@ -336,4 +339,11 @@ function deleteClass(id){
 function deleteProperty(id){
     document.getElementById("diag_n_"+id).remove()
     document.getElementById(id).remove()
+}
+
+function cancelProperty(v){
+    console.log(v)
+    document.getElementById("property_name_input").value = v
+    document.getElementById("property_name_input").onchange()
+    closeDiag()  
 }
