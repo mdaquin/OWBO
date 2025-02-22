@@ -1,3 +1,4 @@
+// this is very, very much deprecated
 function load(e) {
     var file = e.target.files[0]
     loadFile(file)
@@ -36,8 +37,6 @@ function loadFile(file){
 	    }
 	}
 	/** END alexdma's alternative miniparser */
-	
-
 	for (var l in lines){
 	    var tr = lines[l].split(/  */)
 	    if (tr[0]=='@base' || tr[0]=='@prefix')
@@ -110,44 +109,65 @@ function loadFile(file){
     };
     reader.readAsText(file);
 }
+
+// this should be called export
 function save() {
     events.push({type: "click", caughtby: "save", time: new Date().getTime()})
     var data = document.getElementById("prefixes_ta").value
     data += "\n@prefix owbo: <http://datascienceinstitute.ie/owbo/> . \n"
     const svg = document.getElementsByTagName('svg')[0]
     var gs = svg.getElementsByTagName('g')    
-    var classes = {}
+    var classes = {} // should be renamed entities
     var properties = {}
     for (var g in gs){
-	if (gs[g] && gs[g].getAttribute){
-	    var id = gs[g].getAttribute('id')
-		console.log(id)
-	    if (id.indexOf("property")==0){
-		var cl = gs[g].getAttribute("class").split(' ')
-		properties[id] = {}
-		properties[id].name = toUri(gs[g].childNodes[4].innerHTML.replace(/ /g, '_'))
-		properties[id].from = cl[1].substring(9)
-		properties[id].to = cl[2].substring(9)		
-	    } else if (id.indexOf("class")==0){
-		classes[id] = {}
-		classes[id].name=toUri(gs[g].childNodes[1].innerHTML.replace(/ /g, '_'))
-		classes[id].x=gs[g].childNodes[0].getAttribute('cx')
-		classes[id].y=gs[g].childNodes[0].getAttribute('cy')
-	    }
-	}
+		if (gs[g] && gs[g].getAttribute){
+	    	var id = gs[g].getAttribute('id')
+	    	if (id.indexOf("property")==0){
+		  		var cl = gs[g].getAttribute("class").split(' ')
+		  		properties[id] = {}
+		  		properties[id].name = toUri(gs[g].childNodes[4].innerHTML.replace(/ /g, '_'), "property")
+		  		properties[id].from = cl[1].substring(9)
+		  		properties[id].to = cl[2].substring(9)		
+	    	} else if (id.indexOf("class")==0){
+		  		classes[id] = {}
+		  		const circle = document.getElementById(id+"_circle")
+		  		classes[id].type = circle.getAttribute('class').replace("owbo_", "")
+				classes[id].name=toUri(gs[g].childNodes[1].innerHTML.replace(/ /g, '_'), classes[id].type)
+		  		classes[id].x=gs[g].childNodes[0].getAttribute('cx')
+		  		classes[id].y=gs[g].childNodes[0].getAttribute('cy')
+	    	}
+		}
     }
     for(var p in properties) {
-	if (properties[p].name == "<isa>") {
-	    data += "\n"+classes[properties[p].from].name+" rdfs:subClassOf "+classes[properties[p].to].name+" . "
-	} else {
-	    data += "\n"+properties[p].name+" rdfs:domain "+classes[properties[p].from].name+" . "
-	    data += "\n"+properties[p].name+" rdfs:range "+classes[properties[p].to].name+" . "
+		if (properties[p].name == "<isa>") {
+			if (classes[properties[p].from].type == "class")
+	    		data += "\n"+classes[properties[p].from].name+" rdfs:subClassOf "+classes[properties[p].to].name+" . "
+			else if (classes[properties[p].from].type == "individual")
+	    		data += "\n"+classes[properties[p].from].name+" rdf:type "+classes[properties[p].to].name+" . "
+		} else {
+			if (classes[properties[p].from].type == "class" && 
+				(classes[properties[p].to].type == "class" ||
+				classes[properties[p].to].type == "datatype")) {
+	  		  		data += "\n"+properties[p].name+" rdfs:domain "+classes[properties[p].from].name+" . "
+	    	  		data += "\n"+properties[p].name+" rdfs:range "+classes[properties[p].to].name+" . "
+			}
+			else if (classes[properties[p].from].type == "individual" &&
+					(classes[properties[p].to].type == "individual" || 
+			 		classes[properties[p].to].type == "datatype")) {
+						var nname = classes[properties[p].to].name
+						if (classes[properties[p].to].type == "datatype")
+							nname = '"'+classes[properties[p].to].name.
+									replace("xsd:", "")+'"'
+						data += "\n"+classes[properties[p].from].name+" "+
+								properties[p].name+" "+
+				        		nname+" . "
+			 	}
+    	}
 	}
-    }
-    for(var p in classes){
-	data += "\n"+classes[p].name+" owbo:x "+classes[p].x+" . "
-	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
-    }
+    // for(var p in classes){
+	// 	data += "\n"+classes[p].name+" owbo:x "+classes[p].x+" . "
+	// 	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
+    // }
     var file = new Blob([data], {type: "text/plain"});
     var filename = "owbo_export.ttl" // document.getElementById("onto-name").value+".ttl"
     if (window.navigator.msSaveOrOpenBlob) {
@@ -165,10 +185,8 @@ function save() {
         }, 0); 
     }
 }
-function toUri(s){
-    if (s=="string") return "xsd:string"
-    if (s=="integer") return "xsd:integer"
-    if (s=="float") return "xsd:float"						    
-    if (s.indexOf(':')!==-1) return s
+function toUri(s,t){
+    if (s.indexOf(':')!==-1) return 
+	if (t == "datatype") return "xsd:"+s
     else return '<'+s+'>'
 }
