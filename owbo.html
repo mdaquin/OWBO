@@ -10,17 +10,19 @@
 #onto-name { padding: 5px 2px; font-size: 14px; color: #254468; border-radius: 5px; border: 1px solid #254468; text-align:right }
 .owbo_button { background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none }
 .owbo_button:hover { background: #111 }
-.owbo_class, .owbo_literal { cursor:pointer; fill:#cde }
+.owbo_class, .owbo_datatype, .owbo_individual { cursor:pointer; fill:#cde }
 .owbo_class { stroke-width:0px; stroke:#000 }
-.owbo_class:hover, .owbo_literal:hover { stroke-width:1.5px; stroke:#f00 }
+.owbo_individual { stroke-width:0px; stroke:#000; fill:#edc }
+.owbo_class:hover, .owbo_datatype:hover, .owbo_individual:hover { stroke-width:1.5px; stroke:#f00 }
 .owbo_class:hover { fill:#cde; color:#fff }
 .owbo_literal { stroke-width:1px; stroke:#254468; fill: #fff }
+.owbo_datatype { stroke-width:1px; stroke:#254468; fill: #fff }
 .owbo_class_name { cursor:text }
 .topnav { background-color: #cde; font-family: sans-serif; overflow: hidden; padding: 5px }
 .done_button {background: #254468; border-radius: 5px; color: white; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
 .cancel_button {background: #cde; border-radius: 5px; color: #444; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
 .delete_button {background: #fff; border-radius: 5px; border: 1px #444 solid; color: #444; cursor: pointer; font-size: 17px; margin: 0 10px; padding: 8px 10px; text-align: center; text-decoration: none}
-
+.message{margin-bottom: 20px;}
 </style>
   </head>
   <body style="margin:0">
@@ -73,6 +75,7 @@
   </body> 
 
 <script>
+// this is very, very much deprecated
 function load(e) {
     var file = e.target.files[0]
     loadFile(file)
@@ -111,8 +114,6 @@ function loadFile(file){
 	    }
 	}
 	/** END alexdma's alternative miniparser */
-	
-
 	for (var l in lines){
 	    var tr = lines[l].split(/  */)
 	    if (tr[0]=='@base' || tr[0]=='@prefix')
@@ -185,44 +186,65 @@ function loadFile(file){
     };
     reader.readAsText(file);
 }
+
+// this should be called export
 function save() {
     events.push({type: "click", caughtby: "save", time: new Date().getTime()})
     var data = document.getElementById("prefixes_ta").value
     data += "\n@prefix owbo: <http://datascienceinstitute.ie/owbo/> . \n"
     const svg = document.getElementsByTagName('svg')[0]
     var gs = svg.getElementsByTagName('g')    
-    var classes = {}
+    var classes = {} // should be renamed entities
     var properties = {}
     for (var g in gs){
-	if (gs[g] && gs[g].getAttribute){
-	    var id = gs[g].getAttribute('id')
-		console.log(id)
-	    if (id.indexOf("property")==0){
-		var cl = gs[g].getAttribute("class").split(' ')
-		properties[id] = {}
-		properties[id].name = toUri(gs[g].childNodes[4].innerHTML.replace(/ /g, '_'))
-		properties[id].from = cl[1].substring(9)
-		properties[id].to = cl[2].substring(9)		
-	    } else if (id.indexOf("class")==0){
-		classes[id] = {}
-		classes[id].name=toUri(gs[g].childNodes[1].innerHTML.replace(/ /g, '_'))
-		classes[id].x=gs[g].childNodes[0].getAttribute('cx')
-		classes[id].y=gs[g].childNodes[0].getAttribute('cy')
-	    }
-	}
+		if (gs[g] && gs[g].getAttribute){
+	    	var id = gs[g].getAttribute('id')
+	    	if (id.indexOf("property")==0){
+		  		var cl = gs[g].getAttribute("class").split(' ')
+		  		properties[id] = {}
+		  		properties[id].name = toUri(gs[g].childNodes[4].innerHTML.replace(/ /g, '_'), "property")
+		  		properties[id].from = cl[1].substring(9)
+		  		properties[id].to = cl[2].substring(9)		
+	    	} else if (id.indexOf("class")==0){
+		  		classes[id] = {}
+		  		const circle = document.getElementById(id+"_circle")
+		  		classes[id].type = circle.getAttribute('class').replace("owbo_", "")
+				classes[id].name=toUri(gs[g].childNodes[1].innerHTML.replace(/ /g, '_'), classes[id].type)
+		  		classes[id].x=gs[g].childNodes[0].getAttribute('cx')
+		  		classes[id].y=gs[g].childNodes[0].getAttribute('cy')
+	    	}
+		}
     }
     for(var p in properties) {
-	if (properties[p].name == "<isa>") {
-	    data += "\n"+classes[properties[p].from].name+" rdfs:subClassOf "+classes[properties[p].to].name+" . "
-	} else {
-	    data += "\n"+properties[p].name+" rdfs:domain "+classes[properties[p].from].name+" . "
-	    data += "\n"+properties[p].name+" rdfs:range "+classes[properties[p].to].name+" . "
+		if (properties[p].name == "<isa>") {
+			if (classes[properties[p].from].type == "class")
+	    		data += "\n"+classes[properties[p].from].name+" rdfs:subClassOf "+classes[properties[p].to].name+" . "
+			else if (classes[properties[p].from].type == "individual")
+	    		data += "\n"+classes[properties[p].from].name+" rdf:type "+classes[properties[p].to].name+" . "
+		} else {
+			if (classes[properties[p].from].type == "class" && 
+				(classes[properties[p].to].type == "class" ||
+				classes[properties[p].to].type == "datatype")) {
+	  		  		data += "\n"+properties[p].name+" rdfs:domain "+classes[properties[p].from].name+" . "
+	    	  		data += "\n"+properties[p].name+" rdfs:range "+classes[properties[p].to].name+" . "
+			}
+			else if (classes[properties[p].from].type == "individual" &&
+					(classes[properties[p].to].type == "individual" || 
+			 		classes[properties[p].to].type == "datatype")) {
+						var nname = classes[properties[p].to].name
+						if (classes[properties[p].to].type == "datatype")
+							nname = '"'+classes[properties[p].to].name.
+									replace("xsd:", "")+'"'
+						data += "\n"+classes[properties[p].from].name+" "+
+								properties[p].name+" "+
+				        		nname+" . "
+			 	}
+    	}
 	}
-    }
-    for(var p in classes){
-	data += "\n"+classes[p].name+" owbo:x "+classes[p].x+" . "
-	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
-    }
+    // for(var p in classes){
+	// 	data += "\n"+classes[p].name+" owbo:x "+classes[p].x+" . "
+	// 	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
+    // }
     var file = new Blob([data], {type: "text/plain"});
     var filename = "owbo_export.ttl" // document.getElementById("onto-name").value+".ttl"
     if (window.navigator.msSaveOrOpenBlob) {
@@ -240,11 +262,9 @@ function save() {
         }, 0); 
     }
 }
-function toUri(s){
-    if (s=="string") return "xsd:string"
-    if (s=="integer") return "xsd:integer"
-    if (s=="float") return "xsd:float"						    
-    if (s.indexOf(':')!==-1) return s
+function toUri(s,t){
+    if (s.indexOf(':')!==-1) return 
+	if (t == "datatype") return "xsd:"+s
     else return '<'+s+'>'
 }
 </script>
@@ -310,12 +330,12 @@ function class_clicked(eln){
 	var props = document.getElementsByClassName("property_"+clid)
 	var toremove = []
 	for(var p in props)
-	    if (typeof props[p].remove == "function") 
-		toremove.push(props[p])	    
+	    if (typeof props[p].remove == "function") toremove.push(props[p])	    
 	for(var e in toremove) {
 	    var classID1 = toremove[e].getAttribute("class").split(" ")[1].substring(9)
 	    var classID2 = toremove[e].getAttribute("class").split(" ")[2].substring(9)	    
-	    var x1 = parseInt(document.getElementById(classID1).childNodes[0].getAttribute("cx"))
+	    console.log(classID1+" "+classID2)
+		var x1 = parseInt(document.getElementById(classID1).childNodes[0].getAttribute("cx"))
 	    var y1 = parseInt(document.getElementById(classID1).childNodes[0].getAttribute("cy"))
 	    var x2 = parseInt(document.getElementById(classID2).childNodes[0].getAttribute("cx"))
 	    var y2 = parseInt(document.getElementById(classID2).childNodes[0].getAttribute("cy"))
@@ -383,6 +403,8 @@ var existingProp = {}
 
 function addClass(mx,my,name){
     clcount = document.getElementsByClassName("owbo_class").length
+    clcount += document.getElementsByClassName("owbo_individual").length
+    clcount += document.getElementsByClassName("owbo_datatype").length
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
     clg.setAttribute("id", "class_"+(clcount++))  
     const clcir = document.createElementNS("http://www.w3.org/2000/svg", "ellipse")
@@ -417,15 +439,15 @@ function addClass(mx,my,name){
     cltext.setAttribute("onclick", "class_name_clicked('"+clg.id+"_name')")
     // clcir.setAttribute("fill", classColour)
     if (name) {
-        let isLiteral = ['string','integer','int','float'].includes(name);
+        // let isLiteral = ['string','integer','int','float'].includes(name);
 	    // clcir.setAttribute("fill", isLiteral ? litColour : classColour);
-	    clcir.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
+	    clcir.setAttribute("class", "owbo_class") 
     } else changeClassName(cltext, undefined)
     return "class_"+(clcount-1)
 }
 
 function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
-    pcount=document.getElementsByClassName("owbo_property").length
+    pcount=document.getElementsByClassName("owbo_property_name").length
     var x1 = ox1; var x2 = ox2;
     if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
     const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
@@ -512,17 +534,17 @@ function changeClassName(el, v){
     inputtext.setAttribute("id", "class_name_input")
     if (v) inputtext.setAttribute("value", v)
     inputtext.onchange = function() {
-        const litMap = { 
-            'string':'string',
-            'str':'string',
-            'integer':'integer',
-            'int':'integer',
-            'float':'float',
-            'double':'float'
-        };
+        // const litMap = { 
+        //     'string':'string',
+        //     'str':'string',
+        //     'integer':'integer',
+        //     'int':'integer',
+        //     'float':'float',
+        //     'double':'float'
+        // };
         var newname = this.value;
-        var isLiteral = newname.toLowerCase() in litMap;
-        if (isLiteral) { newname = litMap[newname.toLowerCase()] };
+        // var isLiteral = newname.toLowerCase() in litMap;
+        // if (isLiteral) { newname = litMap[newname.toLowerCase()] };
         el.innerHTML = newname
         const p = el.previousSibling
         var mx = parseInt(p.getAttribute("cx"))
@@ -534,19 +556,60 @@ function changeClassName(el, v){
         p.setAttribute("rx", (cltl/2)+20)
         p.setAttribute("ry", (clth/2)+20)
 	    // p.setAttribute("fill", isLiteral ? litColour : classColour);
-	    p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
+	    // p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
         // ndiv.remove()
     }
+    const elc = document.getElementById(el.id.replace("_name", "_circle"))
+    const concept = document.createElement("input")
+    concept.setAttribute("type", "radio")
+    concept.setAttribute("name", "type")
+    concept.setAttribute("value", "concept")
+    concept.setAttribute("id", "concept")
+    if (elc.getAttribute("class")=="owbo_class")
+        concept.setAttribute("checked", "checked")
+    concept.onchange = function() { 
+        elc.setAttribute("class", "owbo_class")
+    }
+    const conceptLabel = document.createElement("label")
+    conceptLabel.setAttribute("for", "concept")
+    conceptLabel.innerHTML = "Concept"
+    const individual = document.createElement("input")
+    individual.setAttribute("type", "radio")
+    individual.setAttribute("name", "type")
+    individual.setAttribute("value", "individual")
+    individual.setAttribute("id", "individual")
+    if (elc.getAttribute("class")=="owbo_individual")
+        individual.setAttribute("checked", "checked")
+    individual.onchange = function() {
+        elc.setAttribute("class", "owbo_individual")
+    }    
+    const individualLabel = document.createElement("label")
+    individualLabel.setAttribute("for", "individual")
+    individualLabel.innerHTML = "Individual"
+    const datatype = document.createElement("input")
+    datatype.setAttribute("type", "radio")
+    datatype.setAttribute("name", "type")
+    datatype.setAttribute("value", "datatype")
+    datatype.setAttribute("id", "datatype")
+    if (elc.getAttribute("class")=="owbo_datatype")
+        datatype.setAttribute("checked", "checked")
+    datatype.onchange = function() {
+        elc.setAttribute("class", "owbo_datatype")
+    }
+    const datatypeLabel = document.createElement("label")
+    datatypeLabel.setAttribute("for", "datatype")
+    datatypeLabel.innerHTML = "Datatype"
+
     const message = document.createElement("p")
-    message.setAttribute("class", "message")
-    message.innerHTML='Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i> or <i>float</i> if this is a datatype rather than a concept.'
-    // this was not working...
-    // var links = message.getElementsByTagName('a')
-    // for (var l in links) links[l].onclick = function(e){
-    //    	preventDefaults(e)
-    //    	inputtext.value = e.target.textContent
-    //    	inputtext.onchange()
-    //}
+    message.setAttribute("class", "message")   
+    message.appendChild(concept)
+    message.appendChild(conceptLabel)
+    message.appendChild(individual)
+    message.appendChild(individualLabel)
+    message.appendChild(datatype)
+    message.appendChild(datatypeLabel)
+    
+    //message.innerHTML='Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i> or <i>float</i> if this is a datatype rather than a concept.'
 
     const dl = document.createElement("a")
     dl.href= "javascript:deleteClass('"+pp.id+"');"
@@ -600,6 +663,7 @@ function changePropertyName(el, v){
     inputtext.setAttribute("type", "text")
     inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;font-size: 120%")
     inputtext.setAttribute("placeholder", "relation name")
+    inputtext.setAttribute("id", "property_name_input")
     if (v){
 	inputtext.setAttribute("value", v)
     }
@@ -676,7 +740,13 @@ function deleteProperty(id){
     document.getElementById("diag_n_"+id).remove()
     document.getElementById(id).remove()
 }
-</script>
+
+function cancelProperty(v){
+    console.log(v)
+    document.getElementById("property_name_input").value = v
+    document.getElementById("property_name_input").onchange()
+    closeDiag()  
+}</script>
   
   <script>	
 // base / globals
