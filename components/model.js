@@ -1,12 +1,50 @@
 
 var existingProp = {}
 
+function findLastClassNumer(){
+    ln = 0
+    cl = document.getElementsByClassName("owbo_class")
+    for (var c in cl){
+        if (cl[c].id){
+            var n = parseInt(cl[c].id.replace("class_",""))
+            if (n>ln) ln = n
+        }
+    }
+    cl = document.getElementsByClassName("owbo_individual")
+    for (var c in cl){
+        if (cl[c].id){
+            var n = parseInt(cl[c].id.replace("class_",""))
+            if (n>ln) ln = n
+        }
+    }
+    cl = document.getElementsByClassName("owbo_datatype")    
+    for (var c in cl){
+        if (cl[c].id){
+            var n = parseInt(cl[c].id.replace("class_",""))
+            if (n>ln) ln = n
+        }
+    }
+    return ln
+}
+
+function findLastPropertyNumber(){
+    ln = 0
+    pr = document.getElementsByClassName("owbo_property_name")
+    for (var p in pr){
+        if (pr[p].id){
+            var n = parseInt(pr[p].id.replace("property_",""))
+            if (n>ln) ln = n
+        }
+    }
+    return ln
+}
+
+
 function addClass(mx,my,name){
-    clcount = document.getElementsByClassName("owbo_class").length
-    clcount += document.getElementsByClassName("owbo_individual").length
-    clcount += document.getElementsByClassName("owbo_datatype").length
+    clcount = findLastClassNumer()+1
+    console.log("creating class "+clcount)
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
-    clg.setAttribute("id", "class_"+(clcount++))  
+    clg.setAttribute("id", "class_"+(clcount))  
     const clcir = document.createElementNS("http://www.w3.org/2000/svg", "ellipse")
     clcir.setAttribute("cx", mx)
     clcir.setAttribute("cy", my)
@@ -47,11 +85,12 @@ function addClass(mx,my,name){
 }
 
 function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
-    pcount=document.getElementsByClassName("owbo_property_name").length
+    pcount=findLastPropertyNumber()+1
+    console.log("creating property "+pcount)
     var x1 = ox1; var x2 = ox2;
     if (ox1==ox2 && y1==y2) {x1 = ox1 - 20; x2 = ox2 + 20;}
     const pg = document.createElementNS("http://www.w3.org/2000/svg", "g")
-    pg.setAttribute("id", "property_"+(pcount++))
+    pg.setAttribute("id", "property_"+(pcount))
     pg.setAttribute("class", "property_"+c1+"_"+c2+" property_"+c1+" property_"+c2)
     var mx = (x1+x2)/2
     var my = (y1+y2)/2
@@ -102,17 +141,16 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     ptext.setAttribute("x", mx-10)
     ptext.setAttribute("y", my-10)
     ptext.setAttribute("style", "fill: #254468")
+    ptext.setAttribute("class", "owbo_property_name")
     pg.appendChild(ptext)
     svg.insertBefore(pg, svg.childNodes[0])
     var cltl = ptext.getBBox().width
     var clth = ptext.getBBox().height      
     ptext.setAttribute("x", mx-10-(cltl/2))
     ptext.setAttribute("y", my-10+(clth/4))
-    ptext.setAttribute("class", "owbo_property_name")
     ptext.id = pg.id+"_name"
     ptext.setAttribute("onclick", "property_name_clicked('"+pg.id+"_name')")
-    if (!pname)
-	changePropertyName(ptext, undefined)
+    if (!pname) changePropertyName(ptext, undefined)
     else if (pname=="isa"){
 	    pline11.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
 	    pline12.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")	
