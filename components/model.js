@@ -17,7 +17,7 @@ function findLastClassNumer(){
             if (n>ln) ln = n
         }
     }
-    cl = document.getElementsByClassName("owbo_datatype")    
+    cl = document.getElementsByClassName("owbo_datatype")
     for (var c in cl){
         if (cl[c].id){
             var n = parseInt(cl[c].id.replace("class_",""))
@@ -39,25 +39,61 @@ function findLastPropertyNumber(){
     return ln
 }
 
+// Position the four connection handles at the cardinal edges of a node's ellipse.
+function positionHandles(groupId) {
+    var circle = document.getElementById(groupId + "_circle");
+    if (!circle) return;
+    var cx = parseFloat(circle.getAttribute("cx"));
+    var cy = parseFloat(circle.getAttribute("cy"));
+    var rx = parseFloat(circle.getAttribute("rx"));
+    var ry = parseFloat(circle.getAttribute("ry"));
+    var positions = { n: [cx, cy - ry], e: [cx + rx, cy], s: [cx, cy + ry], w: [cx - rx, cy] };
+    for (var dir in positions) {
+        var h = document.getElementById(groupId + "_handle_" + dir);
+        if (h) {
+            h.setAttribute("cx", positions[dir][0]);
+            h.setAttribute("cy", positions[dir][1]);
+        }
+    }
+}
+
+// Add four connection handles to an existing node group (used for new nodes and
+// for nodes loaded from a previously saved HTML file that pre-dates this feature).
+function addHandlesToGroup(groupId) {
+    var clg = document.getElementById(groupId);
+    if (!clg) return;
+    clg.setAttribute("class", "owbo_node_group");
+    var circle = document.getElementById(groupId + "_circle");
+    if (circle) circle.setAttribute("onclick", "event.stopPropagation()");
+    var dirs = ['n', 'e', 's', 'w'];
+    for (var d = 0; d < dirs.length; d++) {
+        if (document.getElementById(groupId + "_handle_" + dirs[d])) continue;
+        var handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        handle.setAttribute("r", "7");
+        handle.setAttribute("class", "connect-handle");
+        handle.id = groupId + "_handle_" + dirs[d];
+        handle.setAttribute("onpointerdown", "connectHandleStart('" + groupId + "', event)");
+        handle.setAttribute("onclick", "event.stopPropagation()");
+        clg.appendChild(handle);
+    }
+    positionHandles(groupId);
+}
 
 function addClass(mx,my,name){
     clcount = findLastClassNumer()+1
     console.log("creating class "+clcount)
     const clg = document.createElementNS("http://www.w3.org/2000/svg", "g")
-    clg.setAttribute("id", "class_"+(clcount))  
+    clg.setAttribute("id", "class_"+(clcount))
+    clg.setAttribute("class", "owbo_node_group")
     const clcir = document.createElementNS("http://www.w3.org/2000/svg", "ellipse")
     clcir.setAttribute("cx", mx)
     clcir.setAttribute("cy", my)
     clcir.setAttribute("rx", "60")
     clcir.setAttribute("ry", "30")
-    clcir.setAttribute("draggable", "true")    
     clcir.setAttribute("class", "owbo_class")
     clcir.id = clg.id+"_circle"
-    clcir.setAttribute("onpointerdown", "classDragStart('"+clg.id+"_circle')")
-    clcir.setAttribute("onpointermove", "classDragOver()")
-    clcir.setAttribute("onmousemove", "classDragOver()")
-//    clcir.onmouseleave = function() {class_clicked(this);}
-    clcir.setAttribute("onpointerup", "class_clicked('"+clg.id+"_circle')")
+    clcir.setAttribute("onpointerdown", "classDragStart('"+clg.id+"_circle', event)")
+    clcir.setAttribute("onclick", "event.stopPropagation()")
     clg.appendChild(clcir)
     const cltext = document.createElementNS("http://www.w3.org/2000/svg", "text")
     clname = "New Concept"
@@ -69,17 +105,15 @@ function addClass(mx,my,name){
     clg.appendChild(cltext)
     svg.appendChild(clg)
     var cltl = cltext.getBBox().width
-    var clth = cltext.getBBox().height      
+    var clth = cltext.getBBox().height
     cltext.setAttribute("x", mx-(cltl/2))
     cltext.setAttribute("y", my+(clth/4))
     cltext.setAttribute("class", "owbo_class_name")
     cltext.id = clg.id+"_name"
-    cltext.setAttribute("onclick", "class_name_clicked('"+clg.id+"_name')")
-    // clcir.setAttribute("fill", classColour)
+    cltext.setAttribute("onclick", "class_name_clicked('"+clg.id+"_name', event)")
+    addHandlesToGroup(clg.id)
     if (name) {
-        // let isLiteral = ['string','integer','int','float'].includes(name);
-	    // clcir.setAttribute("fill", isLiteral ? litColour : classColour);
-	    clcir.setAttribute("class", "owbo_class") 
+        clcir.setAttribute("class", "owbo_class")
     } else changeClassName(cltext, undefined)
     return "class_"+(clcount-1)
 }
@@ -97,11 +131,11 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     var label = Math.max(x1,x2)+" "+Math.max(y1,y2)+" "+Math.min(x1,x2)+" "+Math.min(y1,y2)
     var l = Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2))
     var cosa = (x2-x1)/l
-    var sina = (y2-y1)/l    
+    var sina = (y2-y1)/l
     if (!existingProp[label]) existingProp[label] = 1
     else existingProp[label]++
     var sign = 1
-    if (existingProp[label]%2==0) sign = -1    
+    if (existingProp[label]%2==0) sign = -1
     if (ox1==ox2 && y1==y2) my = my + (sign*100)
     var increment = 20*Math.floor(existingProp[label]/2)
     if (Math.abs(cosa)>Math.abs(sina)) my += sign*increment
@@ -119,8 +153,7 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     pline12.setAttribute("x2", x2)
     pline12.setAttribute("y2", y2)
     pline12.setAttribute("style", "stroke-width: 1px; stroke: #254468; stroke-dasharray: 3 1;")
-    pg.appendChild(pline12)    
-    console.log(mx+" "+my+" "+l+" "+cosa+" "+sina)
+    pg.appendChild(pline12)
     const pline2 = document.createElementNS("http://www.w3.org/2000/svg", "line")
     pline2.setAttribute("x1", mx)
     pline2.setAttribute("y1", my)
@@ -135,7 +168,7 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     pline3.setAttribute("y2", my+((cosa*+5)-(sina*10)))
     pline3.setAttribute("style", "stroke-width: 1px; stroke: #254468")
     pg.appendChild(pline3)
-    const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")    
+    const ptext = document.createElementNS("http://www.w3.org/2000/svg", "text")
     ptext.innerHTML=pname
     if (!pname) ptext.innerHTML="New Relation"
     ptext.setAttribute("x", mx-10)
@@ -145,223 +178,224 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
     pg.appendChild(ptext)
     svg.insertBefore(pg, svg.childNodes[0])
     var cltl = ptext.getBBox().width
-    var clth = ptext.getBBox().height      
+    var clth = ptext.getBBox().height
     ptext.setAttribute("x", mx-10-(cltl/2))
     ptext.setAttribute("y", my-10+(clth/4))
     ptext.id = pg.id+"_name"
-    ptext.setAttribute("onclick", "property_name_clicked('"+pg.id+"_name')")
+    ptext.setAttribute("onclick", "property_name_clicked('"+pg.id+"_name', event)")
     if (!pname) changePropertyName(ptext, undefined)
     else if (pname=="isa"){
 	    pline11.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
-	    pline12.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")	
+	    pline12.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")
 	}
 }
+
 function changeClassName(el, v){
     var diags = document.getElementsByClassName('diag')
     if (diags.length!=0) diags[0].remove()
-    const body = document.getElementsByTagName("BODY")[0]
+
+    const pp = el.parentNode
+    const circle = el.previousSibling
+    const elc = document.getElementById(el.id.replace("_name", "_circle"))
+
+    var svgEl = document.getElementsByTagName('svg')[0]
+    var svgRect = svgEl.getBoundingClientRect()
+    var cx = parseFloat(circle.getAttribute("cx"))
+    var cy = parseFloat(circle.getAttribute("cy"))
+    var rx = parseFloat(circle.getAttribute("rx"))
+    var panelW = Math.max(rx * 2 + 20, 170)
+
     const ndiv = document.createElement("div")
-    const pp = el.parentNode    
-    ndiv.setAttribute("style", "position:fixed; top: 20px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px;")
     ndiv.setAttribute("id", "diag_n_"+pp.id)
-    ndiv.setAttribute("class", "diag")    
+    ndiv.setAttribute("class", "diag")
+    ndiv.style.cssText = "position:fixed;background:white;border:1px solid #aaa;border-radius:8px;" +
+        "padding:8px;box-shadow:0 2px 10px rgba(0,0,0,0.18);box-sizing:border-box;" +
+        "width:"+panelW+"px;" +
+        "left:"+(svgRect.left + cx - panelW/2)+"px;" +
+        "top:"+(svgRect.top + cy - 16)+"px"
+
+    // Name input — live update as the user types
     const inputtext = document.createElement("input")
-    inputtext.setAttribute("type", "text")
-    inputtext.setAttribute("style", "width: 95%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px; font-size:120%")
-    inputtext.setAttribute("placeholder", "concept name")
-    inputtext.setAttribute("id", "class_name_input")
-    if (v) inputtext.setAttribute("value", v)
-    inputtext.onchange = function() {
-        // const litMap = { 
-        //     'string':'string',
-        //     'str':'string',
-        //     'integer':'integer',
-        //     'int':'integer',
-        //     'float':'float',
-        //     'double':'float'
-        // };
-        var newname = this.value;
-        // var isLiteral = newname.toLowerCase() in litMap;
-        // if (isLiteral) { newname = litMap[newname.toLowerCase()] };
-        el.innerHTML = newname
-        const p = el.previousSibling
-        var mx = parseInt(p.getAttribute("cx"))
-        var my = parseInt(p.getAttribute("cy"))
+    inputtext.type = "text"
+    inputtext.id = "class_name_input"
+    inputtext.placeholder = "concept name"
+    inputtext.style.cssText = "width:100%;box-sizing:border-box;border:1px solid #aaa;" +
+        "padding:4px 6px;border-radius:4px;font-size:100%;margin-bottom:6px;"
+    if (v) inputtext.value = v
+
+    var updateName = function() {
+        el.innerHTML = inputtext.value
         var cltl = el.getBBox().width
-        var clth = el.getBBox().height      
+        var clth = el.getBBox().height
+        var mx = parseInt(circle.getAttribute("cx"))
+        var my = parseInt(circle.getAttribute("cy"))
         el.setAttribute("x", mx-(cltl/2))
         el.setAttribute("y", my+(clth/4))
-        p.setAttribute("rx", (cltl/2)+20)
-        p.setAttribute("ry", (clth/2)+20)
-	    // p.setAttribute("fill", isLiteral ? litColour : classColour);
-	    // p.setAttribute("class", isLiteral ? "owbo_literal" : "owbo_class") 
-        // ndiv.remove()
+        circle.setAttribute("rx", Math.max(cltl/2+20, 40))
+        circle.setAttribute("ry", Math.max(clth/2+20, 25))
+        positionHandles(pp.id)
     }
-    const elc = document.getElementById(el.id.replace("_name", "_circle"))
-    const concept = document.createElement("input")
-    concept.setAttribute("type", "radio")
-    concept.setAttribute("name", "type")
-    concept.setAttribute("value", "concept")
-    concept.setAttribute("id", "concept")
-    if (elc.getAttribute("class")=="owbo_class")
-        concept.setAttribute("checked", "checked")
-    concept.onchange = function() { 
-        elc.setAttribute("class", "owbo_class")
+    inputtext.oninput  = updateName
+    inputtext.onchange = updateName
+
+    // Type toggle buttons shown just below the node
+    const typeRow = document.createElement("div")
+    typeRow.style.cssText = "display:flex;gap:4px;margin-bottom:6px;"
+    var currentType = elc.getAttribute("class")
+    var typeDefs = [
+        { cls:"owbo_class",      label:"Concept"    },
+        { cls:"owbo_individual", label:"Individual" },
+        { cls:"owbo_datatype",   label:"Datatype"   }
+    ]
+    typeDefs.forEach(function(t) {
+        var btn = document.createElement("button")
+        btn.textContent = t.label
+        var active = currentType === t.cls
+        btn.style.cssText = "flex:1;padding:3px 0;font-size:75%;border-radius:4px;cursor:pointer;" +
+            "border:1px solid #254468;" +
+            (active ? "background:#254468;color:white;" : "background:white;color:#254468;")
+        btn.onclick = function(e) {
+            e.stopPropagation()
+            elc.setAttribute("class", t.cls)
+            typeRow.querySelectorAll("button").forEach(function(b){
+                b.style.background="white"; b.style.color="#254468"
+            })
+            btn.style.background="#254468"; btn.style.color="white"
+        }
+        typeRow.appendChild(btn)
+    })
+
+    // Subtle delete link, only for existing concepts
+    const actionRow = document.createElement("div")
+    actionRow.style.cssText = "display:flex;justify-content:flex-end;"
+    if (v) {
+        var delLink = document.createElement("a")
+        delLink.href = "javascript:deleteClass('"+pp.id+"');"
+        delLink.textContent = "delete"
+        delLink.style.cssText = "color:#bbb;font-size:80%;text-decoration:none;cursor:pointer;"
+        delLink.onmouseover = function(){ this.style.color="#c00" }
+        delLink.onmouseout  = function(){ this.style.color="#bbb" }
+        actionRow.appendChild(delLink)
     }
-    const conceptLabel = document.createElement("label")
-    conceptLabel.setAttribute("for", "concept")
-    conceptLabel.innerHTML = "Concept"
-    const individual = document.createElement("input")
-    individual.setAttribute("type", "radio")
-    individual.setAttribute("name", "type")
-    individual.setAttribute("value", "individual")
-    individual.setAttribute("id", "individual")
-    if (elc.getAttribute("class")=="owbo_individual")
-        individual.setAttribute("checked", "checked")
-    individual.onchange = function() {
-        elc.setAttribute("class", "owbo_individual")
-    }    
-    const individualLabel = document.createElement("label")
-    individualLabel.setAttribute("for", "individual")
-    individualLabel.innerHTML = "Individual"
-    const datatype = document.createElement("input")
-    datatype.setAttribute("type", "radio")
-    datatype.setAttribute("name", "type")
-    datatype.setAttribute("value", "datatype")
-    datatype.setAttribute("id", "datatype")
-    if (elc.getAttribute("class")=="owbo_datatype")
-        datatype.setAttribute("checked", "checked")
-    datatype.onchange = function() {
-        elc.setAttribute("class", "owbo_datatype")
-    }
-    const datatypeLabel = document.createElement("label")
-    datatypeLabel.setAttribute("for", "datatype")
-    datatypeLabel.innerHTML = "Datatype"
 
-    const message = document.createElement("p")
-    message.setAttribute("class", "message")   
-    message.appendChild(concept)
-    message.appendChild(conceptLabel)
-    message.appendChild(individual)
-    message.appendChild(individualLabel)
-    message.appendChild(datatype)
-    message.appendChild(datatypeLabel)
-    
-    //message.innerHTML='Type <i>string</i>, <i>str</i>, <i>integer</i>, <i>int</i> or <i>float</i> if this is a datatype rather than a concept.'
-
-    const dl = document.createElement("a")
-    dl.href= "javascript:deleteClass('"+pp.id+"');"
-    dl.innerHTML = "delete"
-    dl.setAttribute("class", "delete_button")
-    dl.id = "delete_class_button"
-    if (!v) dl.style="display:none;"
-
-    const ca = document.createElement("a")
-    if (!v) ca.href= "javascript:deleteClass('"+pp.id+"');"
-    else ca.href= "javascript:cancelClass('"+v+"');"
-    ca.innerHTML = "cancel"
-    ca.setAttribute("class", "cancel_button")
-    ca.id = "cancel_class_button"
-
-    const dob = document.createElement("a")
-    dob.href= "javascript:closeDiag();"
-    dob.innerHTML = "done"
-    dob.setAttribute("class", "done_button")
-  
     ndiv.appendChild(inputtext)
-    ndiv.appendChild(message)    
-    ndiv.appendChild(dob)
-    ndiv.appendChild(ca)
-    ndiv.appendChild(dl)
-    body.appendChild(ndiv)
+    ndiv.appendChild(typeRow)
+    ndiv.appendChild(actionRow)
+    document.body.appendChild(ndiv)
     inputtext.focus()
+    if (v) inputtext.select()
+
+    inputtext.onkeydown = function(e) {
+        if (e.key === "Enter")  closeDiag()
+        if (e.key === "Escape") { if (v) cancelClass(v); else deleteClass(pp.id) }
+    }
 }
 
 function cancelClass(v){
     console.log(v)
     document.getElementById("class_name_input").value = v
     document.getElementById("class_name_input").onchange()
-    closeDiag()  
+    closeDiag()
 }
 
 function closeDiag(){
-    document.getElementsByClassName('diag')[0].remove()
+    var diags = document.getElementsByClassName('diag')
+    if (diags.length != 0) diags[0].remove()
 }
 
 function changePropertyName(el, v){
     var diags = document.getElementsByClassName('diag')
     if (diags.length!=0) diags[0].remove()
-    const body = document.getElementsByTagName("BODY")[0]
-    const ndiv = document.createElement("div")
+
     const pp = el.parentNode
-    ndiv.setAttribute("style", "position:fixed; top: 20px; left: 20%; width: 60%; background: white; border: 1px solid #666; border-radius: 10px; padding: 10px 10px 10px 10px")
+
+    var svgEl = document.getElementsByTagName('svg')[0]
+    var svgRect = svgEl.getBoundingClientRect()
+    var bbox = el.getBBox()
+    var centerX = svgRect.left + bbox.x + bbox.width / 2
+    var topY    = svgRect.top  + bbox.y
+    var panelW  = 240
+
+    const ndiv = document.createElement("div")
     ndiv.setAttribute("id", "diag_n_"+pp.id)
-    ndiv.setAttribute("class", "diag")    
+    ndiv.setAttribute("class", "diag")
+    // Horizontal inline layout: [input] [isa] [×]
+    ndiv.style.cssText = "position:fixed;background:white;border:1px solid #aaa;border-radius:8px;" +
+        "padding:6px 8px;box-shadow:0 2px 10px rgba(0,0,0,0.18);" +
+        "display:flex;align-items:center;gap:6px;box-sizing:border-box;" +
+        "width:"+panelW+"px;" +
+        "left:"+(centerX - panelW/2)+"px;" +
+        "top:"+(topY - 46)+"px"
+
+    // Name input — live update as the user types
     const inputtext = document.createElement("input")
-    inputtext.setAttribute("type", "text")
-    inputtext.setAttribute("style", "width: 100%; border: 1px solid #aaa; padding: 5px 5px 5px 5px; border-radius: 5px;font-size: 120%")
-    inputtext.setAttribute("placeholder", "relation name")
-    inputtext.setAttribute("id", "property_name_input")
-    if (v){
-	inputtext.setAttribute("value", v)
-    }
-    inputtext.onchange = function() {
-	var newname = this.value
-	el.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")
-	el.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black; stroke-dasharray: 3 1;")	
-	if (newname.toLowerCase() == "subclassof" || newname.toLowerCase() == "isa"){
-	    newname = "isa"
-	    el.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
-	    el.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")	
-	}
-	el.innerHTML = newname
-	const p = el.previousSibling
-	var mx = parseFloat(p.getAttribute("x1"))
-	var my = parseFloat(p.getAttribute("y1"))
+    inputtext.type = "text"
+    inputtext.id = "property_name_input"
+    inputtext.placeholder = "relation name"
+    inputtext.style.cssText = "flex:1;min-width:0;border:1px solid #aaa;" +
+        "padding:4px 6px;border-radius:4px;font-size:100%;"
+    if (v) inputtext.value = v
+
+    var updatePropertyName = function() {
+        var newname = inputtext.value
+        el.parentNode.children[0].setAttribute("style", "stroke-width:1px;stroke:black;stroke-dasharray:3 1;")
+        el.parentNode.children[1].setAttribute("style", "stroke-width:1px;stroke:black;stroke-dasharray:3 1;")
+        if (newname.toLowerCase() == "subclassof" || newname.toLowerCase() == "isa") {
+            newname = "isa"
+            inputtext.value = "isa"
+            el.parentNode.children[0].setAttribute("style", "stroke-width:1px;stroke:black;")
+            el.parentNode.children[1].setAttribute("style", "stroke-width:1px;stroke:black;")
+        }
+        el.innerHTML = newname
+        var p = el.previousSibling
+        var mx = parseFloat(p.getAttribute("x1"))
+        var my = parseFloat(p.getAttribute("y1"))
         var cltl = el.getBBox().width
-        var clth = el.getBBox().height      
+        var clth = el.getBBox().height
         el.setAttribute("x", mx-10-(cltl/2))
         el.setAttribute("y", my-10+(clth/4))
-	// ndiv.remove()
-	  }
-    const message = document.createElement("p")
-    message.setAttribute("class", "message")
-    message.innerHTML="Type <i>isa</i> for a subconcept (between concept) or a type (between individual and concept) relation."
-    // var links = message.getElementsByTagName('a')
-    // for (var l in links) links[l].onclick = function(e){
-    //     	preventDefaults(e)
-    //     	inputtext.value = e.target.textContent
-    //     	inputtext.onchange()
-    // }
-    
-    const dl = document.createElement("a")
-    dl.href= "javascript:deleteProperty('"+pp.id+"');"
-    dl.innerHTML = "delete"
-    dl.setAttribute("class", "delete_button")
-    dl.id = "delete_prop_button"
-    if (!v) dl.style="display:none;"
+    }
+    inputtext.oninput  = updatePropertyName
+    inputtext.onchange = updatePropertyName
 
-    const ca = document.createElement("a")
-    if (!v) ca.href= "javascript:deleteProperty('"+pp.id+"');"
-    else ca.href= "javascript:cancelProperty('"+v+"');"
-    ca.innerHTML = "cancel"
-    ca.setAttribute("class", "cancel_button")
-    ca.id = "cancel_property_button"
+    // isa shortcut — one click to declare a subclass/type relation
+    var isaBtn = document.createElement("button")
+    isaBtn.textContent = "isa"
+    isaBtn.title = "Make this a subclass / type-of relation"
+    isaBtn.style.cssText = "padding:3px 8px;font-size:90%;border-radius:4px;cursor:pointer;" +
+        "border:1px solid #254468;background:white;color:#254468;white-space:nowrap;flex-shrink:0;"
+    isaBtn.onclick = function(e) {
+        e.stopPropagation()
+        inputtext.value = "isa"
+        updatePropertyName()
+        closeDiag()
+    }
 
-    const dob = document.createElement("a")
-    dob.href= "javascript:closeDiag();"
-    dob.innerHTML = "done"
-    dob.setAttribute("class", "done_button")
-  
     ndiv.appendChild(inputtext)
-    ndiv.appendChild(message)
-    ndiv.appendChild(dob)
-    ndiv.appendChild(ca)
-    ndiv.appendChild(dl)
-    body.appendChild(ndiv)
-    inputtext.focus()    
+    ndiv.appendChild(isaBtn)
+
+    // Delete control, only for existing relations
+    if (v) {
+        var delLink = document.createElement("a")
+        delLink.href = "javascript:deleteProperty('"+pp.id+"');"
+        delLink.textContent = "×"
+        delLink.title = "delete relation"
+        delLink.style.cssText = "color:#bbb;font-size:120%;text-decoration:none;cursor:pointer;flex-shrink:0;"
+        delLink.onmouseover = function(){ this.style.color="#c00" }
+        delLink.onmouseout  = function(){ this.style.color="#bbb" }
+        ndiv.appendChild(delLink)
+    }
+
+    document.body.appendChild(ndiv)
+    inputtext.focus()
+    if (v) inputtext.select()
+
+    inputtext.onkeydown = function(e) {
+        if (e.key === "Enter")  closeDiag()
+        if (e.key === "Escape") { if (v) cancelProperty(v); else deleteProperty(pp.id) }
+    }
 }
-    
+
 function deleteClass(id){
     document.getElementById("diag_n_"+id).remove()
     document.getElementById(id).remove()
@@ -369,11 +403,12 @@ function deleteClass(id){
     console.log(props)
     var toremove = []
     for(var p in props)
-	if (typeof props[p].remove == "function") 
+	if (typeof props[p].remove == "function")
 	    toremove.push(props[p])
     for(var e in toremove)
 	toremove[e].remove()
 }
+
 function deleteProperty(id){
     document.getElementById("diag_n_"+id).remove()
     document.getElementById(id).remove()
@@ -383,5 +418,5 @@ function cancelProperty(v){
     console.log(v)
     document.getElementById("property_name_input").value = v
     document.getElementById("property_name_input").onchange()
-    closeDiag()  
+    closeDiag()
 }
