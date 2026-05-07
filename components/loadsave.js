@@ -114,7 +114,8 @@ function loadFile(file){
 function save() {
     events.push({type: "click", caughtby: "save", time: new Date().getTime()})
     var data = document.getElementById("prefixes_ta").value
-    data += "\n@prefix owbo: <http://datascienceinstitute.ie/owbo/> . \n"
+    data += "\n@prefix owbo: <http://datascienceinstitute.ie/owbo/> . "
+    data += "\n@prefix owl:  <http://www.w3.org/2002/07/owl#> . \n"
     const svg = document.getElementsByTagName('svg')[0]
     var gs = svg.getElementsByTagName('g')    
     var classes = {} // should be renamed entities
@@ -138,32 +139,55 @@ function save() {
 	    	}
 		}
     }
-    for(var p in properties) {
-		if (properties[p].name == "<isa>") {
-			if (classes[properties[p].from].type == "class")
-	    		data += "\n"+classes[properties[p].from].name+" rdfs:subClassOf "+classes[properties[p].to].name+" . "
-			else if (classes[properties[p].from].type == "individual")
-	    		data += "\n"+classes[properties[p].from].name+" rdf:type "+classes[properties[p].to].name+" . "
-		} else {
-			if (classes[properties[p].from].type == "class" && 
-				(classes[properties[p].to].type == "class" ||
-				classes[properties[p].to].type == "datatype")) {
-	  		  		data += "\n"+properties[p].name+" rdfs:domain "+classes[properties[p].from].name+" . "
-	    	  		data += "\n"+properties[p].name+" rdfs:range "+classes[properties[p].to].name+" . "
-			}
-			else if (classes[properties[p].from].type == "individual" &&
-					(classes[properties[p].to].type == "individual" || 
-			 		classes[properties[p].to].type == "datatype")) {
-						var nname = classes[properties[p].to].name
-						if (classes[properties[p].to].type == "datatype")
-							nname = '"'+classes[properties[p].to].name.
-									replace("xsd:", "")+'"'
-						data += "\n"+classes[properties[p].from].name+" "+
-								properties[p].name+" "+
-				        		nname+" . "
-			 	}
-    	}
-	}
+    // isa → subClassOf / rdf:type (one triple per edge, unchanged)
+    for (var p in properties) {
+        if (properties[p].name == "<isa>") {
+            if (classes[properties[p].from].type == "class")
+                data += "\n"+classes[properties[p].from].name+" rdfs:subClassOf "+classes[properties[p].to].name+" . "
+            else if (classes[properties[p].from].type == "individual")
+                data += "\n"+classes[properties[p].from].name+" rdf:type "+classes[properties[p].to].name+" . "
+        }
+    }
+
+    // Class-level properties: group by name so that when multiple edges share
+    // the same property name, domain and range are expressed as owl:unionOf
+    // instead of repeated rdfs:domain/rdfs:range (which RDFS reads as intersection).
+    var classPropsByName = {}
+    for (var p in properties) {
+        if (properties[p].name == "<isa>" || !properties[p].name) continue
+        var from = classes[properties[p].from]
+        var to   = classes[properties[p].to]
+        if (!from || !to) continue
+        if (from.type == "class" && (to.type == "class" || to.type == "datatype")) {
+            var pname = properties[p].name
+            if (!classPropsByName[pname]) classPropsByName[pname] = { domains: [], ranges: [] }
+            if (classPropsByName[pname].domains.indexOf(from.name) === -1) classPropsByName[pname].domains.push(from.name)
+            if (classPropsByName[pname].ranges.indexOf(to.name)   === -1) classPropsByName[pname].ranges.push(to.name)
+        }
+    }
+    for (var pname in classPropsByName) {
+        var domains = classPropsByName[pname].domains
+        var ranges  = classPropsByName[pname].ranges
+        data += "\n" + pname + " rdfs:domain " + (domains.length === 1
+            ? domains[0]
+            : "[ a owl:Class ; owl:unionOf ( " + domains.join(" ") + " ) ]") + " . "
+        data += "\n" + pname + " rdfs:range "  + (ranges.length === 1
+            ? ranges[0]
+            : "[ a owl:Class ; owl:unionOf ( " + ranges.join(" ") + " ) ]") + " . "
+    }
+
+    // Individual-level assertions: direct triples, no grouping needed
+    for (var p in properties) {
+        if (properties[p].name == "<isa>" || !properties[p].name) continue
+        var from = classes[properties[p].from]
+        var to   = classes[properties[p].to]
+        if (!from || !to) continue
+        if (from.type == "individual" && (to.type == "individual" || to.type == "datatype")) {
+            var nname = to.name
+            if (to.type == "datatype") nname = '"' + to.name.replace("xsd:", "") + '"'
+            data += "\n" + from.name + " " + properties[p].name + " " + nname + " . "
+        }
+    }
     // for(var p in classes){
 	// 	data += "\n"+classes[p].name+" owbo:x "+classes[p].x+" . "
 	// 	data += "\n"+classes[p].name+" owbo:y "+classes[p].y+" . "	
