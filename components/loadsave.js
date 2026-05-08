@@ -176,6 +176,19 @@ function save() {
             : "[ a owl:Class ; owl:unionOf ( " + ranges.join(" ") + " ) ]") + " . "
     }
 
+    // Concept → Individual: hasValue restriction on the concept
+    for (var p in properties) {
+        if (properties[p].name == "<isa>" || !properties[p].name) continue
+        var from = classes[properties[p].from]
+        var to   = classes[properties[p].to]
+        if (!from || !to) continue
+        if (from.type == "class" && to.type == "individual") {
+            data += "\n" + from.name + " rdfs:subClassOf" +
+                    " [ a owl:Restriction ; owl:onProperty " + properties[p].name +
+                    " ; owl:hasValue " + to.name + " ] . "
+        }
+    }
+
     // Individual-level assertions: direct triples, no grouping needed
     for (var p in properties) {
         if (properties[p].name == "<isa>" || !properties[p].name) continue

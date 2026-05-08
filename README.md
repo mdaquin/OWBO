@@ -13,6 +13,33 @@ In addition, the semantic network can be exported in the RDF Schema turtle forma
 * Either clone this repository and open the `owbo.html` file using your favourite Web browser,
 * or simply [preview the latest source file](https://htmlpreview.github.io/?https://github.com/mdaquin/OWBO/blob/master/owbo.html).
 
+## RDF/OWL Export Mapping
+
+The export produces a [Turtle](https://www.w3.org/TR/turtle/) file. OWBO concepts and individuals carry no explicit type declaration in the output — their roles are implied by the triples in which they appear. Datatypes are referenced using the `xsd:` prefix.
+
+### Relations
+
+| From | Relation name | To | RDF/OWL triple(s) produced |
+|---|---|---|---|
+| Concept | `isa` | Concept | `<A> rdfs:subClassOf <B> .` |
+| Individual | `isa` | Concept | `<a> rdf:type <B> .` |
+| Concept | *any* | Concept or Datatype | `<prop> rdfs:domain <A> .` `<prop> rdfs:range <B> .` |
+| Concept | *any* | Individual | `<A> rdfs:subClassOf [ a owl:Restriction ; owl:onProperty <prop> ; owl:hasValue <b> ] .` |
+| Individual | *any* | Individual | `<a> <prop> <b> .` |
+| Individual | *any* | Datatype | `<a> <prop> "value" .` |
+
+Relations involving other combinations are not exported.
+
+### Union domains and ranges
+
+When the same property name appears on multiple edges at the concept level, OWBO emits a single property declaration whose domain (or range) is the OWL union of all the corresponding concepts, rather than repeating `rdfs:domain` / `rdfs:range` (which would be interpreted as an intersection under RDFS semantics):
+
+```turtle
+# hasColor used from both Animal and Vehicle to Color
+<hasColor> rdfs:domain [ a owl:Class ; owl:unionOf ( <Animal> <Vehicle> ) ] .
+<hasColor> rdfs:range  <Color> .
+```
+
 ## Rights
 
 OWBO is free and open source. Please see the [License](LICENSE) file for details.
