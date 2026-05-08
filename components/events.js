@@ -40,6 +40,7 @@ function svgPointerUp(event) {
                 );
             }
         }
+        document.body.classList.remove('connecting');
         pointerState = null;
         return;
     }
@@ -106,6 +107,7 @@ function connectHandleStart(groupId, event) {
     previewLine.setAttribute("id", "connect_preview");
     svg.appendChild(previewLine);
     pointerState = { type: 'connect', originCircle: originCircle };
+    document.body.classList.add('connecting');
 }
 
 function redrawRelationsForNode(clid) {
