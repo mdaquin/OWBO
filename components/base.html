@@ -55,13 +55,15 @@ body.connecting .owbo_node_group:hover .connect-handle { opacity: 0 !important; 
     </div>
 
     <!-- actual drawing area -->
-    <div id="owbo_board" style="cursor:crosshair; width: 100%; height: 90vh">
+    <div id="owbo_board" style="cursor:crosshair; width: 100%; height: 90vh; overflow: auto">
     </div>
 
     <!-- footer -->
     <div style="position: fixed; bottom: 10px; left: 10px;">
       <span style="color:#888">
-        To save the current network, save the page (ctrl-s). You can also <a style="color: #444" href="javascript:save();">export the network as a Turtle file</a>.
+        To save the current network, save the page (ctrl-s). You can also <a style="color: #444" href="javascript:save();">export the network as a Turtle file</a>
+        or <a style="color: #444" href="javascript:document.getElementById('ttl-file-input').click();">import from a Turtle file</a>.
+        <input type="file" id="ttl-file-input" accept=".ttl,.turtle" style="display:none" onchange="loadTTL(this.files[0]);this.value=''"/>
         OWBO is open source.</span> <a style="color: #444" href="https://github.com/mdaquin/OWBO" target="_blank">GitHub</a>
     </div>
     <!-- help button and dialog -->

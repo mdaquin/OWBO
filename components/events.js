@@ -1,6 +1,13 @@
 var DRAG_THRESHOLD = 5;
 var pointerState = null;
 
+function toSVGCoords(event) {
+    var board = document.getElementById('owbo_board');
+    var rect = board.getBoundingClientRect();
+    return { x: event.clientX - rect.left + board.scrollLeft,
+             y: event.clientY - rect.top  + board.scrollTop };
+}
+
 // Handles all pointer releases on the SVG surface:
 //   - No active state + released on background → create new concept
 //   - Active 'connect' drag → complete or cancel relation
@@ -13,7 +20,7 @@ function svgPointerUp(event) {
             // Dismiss any open edit panel before creating a new concept
             var openDiags = document.getElementsByClassName('diag')
             if (openDiags.length > 0) { closeDiag(); return; }
-            addClass(event.clientX, event.clientY, undefined);
+            var sc = toSVGCoords(event); addClass(sc.x, sc.y, undefined);
         }
         return;
     }
@@ -88,8 +95,9 @@ function classDragOver(event) {
     } else if (pointerState.type === 'connect') {
         var pl = document.getElementById('connect_preview');
         if (pl) {
-            pl.setAttribute("x2", event.clientX);
-            pl.setAttribute("y2", event.clientY);
+            var sc = toSVGCoords(event);
+            pl.setAttribute("x2", sc.x);
+            pl.setAttribute("y2", sc.y);
         }
     }
 }
@@ -99,10 +107,11 @@ function connectHandleStart(groupId, event) {
     var handle = event.target;
     var originCircle = document.getElementById(groupId + "_circle");
     var previewLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    var sc = toSVGCoords(event);
     previewLine.setAttribute("x1", handle.getAttribute("cx"));
     previewLine.setAttribute("y1", handle.getAttribute("cy"));
-    previewLine.setAttribute("x2", event.clientX);
-    previewLine.setAttribute("y2", event.clientY);
+    previewLine.setAttribute("x2", sc.x);
+    previewLine.setAttribute("y2", sc.y);
     previewLine.setAttribute("style", "stroke:#254468;stroke-width:1.5px;stroke-dasharray:5 3;pointer-events:none;");
     previewLine.setAttribute("id", "connect_preview");
     svg.appendChild(previewLine);
