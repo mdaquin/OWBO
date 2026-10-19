@@ -133,7 +133,10 @@ function redrawRelationsForNode(clid) {
         var x2 = parseInt(document.getElementById(classID2).childNodes[0].getAttribute("cx"));
         var y2 = parseInt(document.getElementById(classID2).childNodes[0].getAttribute("cy"));
         var label = toremove[e].childNodes[4].innerHTML;
-        addProperty(x1, y1, x2, y2, classID1, classID2, label);
+        var newId = addProperty(x1, y1, x2, y2, classID1, classID2, label);
+        // keep annotations imported from Turtle (see buildOwboGraph)
+        var ann = toremove[e].getAttribute("data-owbo-annotations");
+        if (ann) document.getElementById(newId).setAttribute("data-owbo-annotations", ann);
         toremove[e].remove();
     }
 }

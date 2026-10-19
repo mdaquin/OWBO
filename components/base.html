@@ -99,13 +99,16 @@ svg.setAttribute("onpointerup", "svgPointerUp(event)")
 svg.setAttribute("style", "display:block")
 ;(function() {
     document.getElementById("owbo_board").appendChild(svg);
-    // Retrofit connection handles onto any nodes loaded from a saved HTML file
+    // Retrofit connection handles and label-fitted ellipses onto any nodes loaded
+    // from a saved HTML file
     var circles = svg.querySelectorAll('[id$="_circle"]');
     var seen = {};
     for (var i = 0; i < circles.length; i++) {
         var groupId = circles[i].parentNode.getAttribute("id");
         if (groupId && !seen[groupId]) {
             seen[groupId] = true;
+            var label = circles[i].parentNode.querySelector("text");
+            if (label) fitEllipse(circles[i], label);
             addHandlesToGroup(groupId);
         }
     }

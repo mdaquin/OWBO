@@ -79,6 +79,17 @@ function addHandlesToGroup(groupId) {
     positionHandles(groupId);
 }
 
+// Size a node's ellipse so that its whole label fits inside. The label's corners
+// are its widest points, so rx is chosen such that (w/2)²/rx² + (h/2)²/ry² <= 1.
+function fitEllipse(circle, text){
+    var bb = text.getBBox()
+    var ry = Math.max(bb.height/2+20, 25)
+    var hh = bb.height/2
+    var rx = (bb.width/2) / Math.sqrt(1 - (hh*hh)/(ry*ry)) + 15
+    circle.setAttribute("rx", Math.max(rx, 40))
+    circle.setAttribute("ry", ry)
+}
+
 function addClass(mx,my,name){
     clcount = findLastClassNumer()+1
     console.log("creating class "+clcount)
@@ -111,6 +122,7 @@ function addClass(mx,my,name){
     cltext.setAttribute("class", "owbo_class_name")
     cltext.id = clg.id+"_name"
     cltext.setAttribute("onclick", "class_name_clicked('"+clg.id+"_name', event)")
+    fitEllipse(clcir, cltext)
     addHandlesToGroup(clg.id)
     if (name) {
         clcir.setAttribute("class", "owbo_class")
@@ -188,6 +200,7 @@ function addProperty(ox1,y1,ox2,y2,c1,c2,pname){
 	    pline11.parentNode.children[0].setAttribute("style",  "stroke-width: 1px; stroke: black;")
 	    pline12.parentNode.children[1].setAttribute("style",  "stroke-width: 1px; stroke: black;")
 	}
+    return pg.id
 }
 
 function changeClassName(el, v){
@@ -231,8 +244,7 @@ function changeClassName(el, v){
         var my = parseInt(circle.getAttribute("cy"))
         el.setAttribute("x", mx-(cltl/2))
         el.setAttribute("y", my+(clth/4))
-        circle.setAttribute("rx", Math.max(cltl/2+20, 40))
-        circle.setAttribute("ry", Math.max(clth/2+20, 25))
+        fitEllipse(circle, el)
         positionHandles(pp.id)
     }
     inputtext.oninput  = updateName
