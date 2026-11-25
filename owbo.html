@@ -916,24 +916,26 @@ function svgPointerUp(event) {
     if (pointerState.type === 'connect') {
         var previewLine = document.getElementById('connect_preview');
         if (previewLine) previewLine.remove();
-        var target = event.target;
-        var isNode = target && target.classList &&
-            (target.classList.contains("owbo_class") ||
-             target.classList.contains("owbo_individual") ||
-             target.classList.contains("owbo_datatype"));
-        if (isNode) {
+        // Accept a drop anywhere on a node (ellipse, label or handle), not just
+        // the bare ellipse, then connect to that node's ellipse.
+        var group = event.target && event.target.closest ? event.target.closest(".owbo_node_group") : null;
+        var target = group ? document.getElementById(group.getAttribute("id") + "_circle") : null;
+        // A plain click on a handle (no real drag) should not create a self-relation
+        var dx = event.clientX - pointerState.startX, dy = event.clientY - pointerState.startY;
+        var moved = Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD;
+        if (target && moved) {
+            // Dropping back on the origin node creates a self-relation
+            // (addProperty draws it as a loop above/below the node).
             var oc = pointerState.originCircle;
-            if (oc.parentNode !== target.parentNode) {
-                addProperty(
-                    parseFloat(oc.getAttribute("cx")),
-                    parseFloat(oc.getAttribute("cy")),
-                    parseFloat(target.getAttribute("cx")),
-                    parseFloat(target.getAttribute("cy")),
-                    oc.parentNode.getAttribute("id"),
-                    target.parentNode.getAttribute("id"),
-                    undefined
-                );
-            }
+            addProperty(
+                parseFloat(oc.getAttribute("cx")),
+                parseFloat(oc.getAttribute("cy")),
+                parseFloat(target.getAttribute("cx")),
+                parseFloat(target.getAttribute("cy")),
+                oc.parentNode.getAttribute("id"),
+                target.parentNode.getAttribute("id"),
+                undefined
+            );
         }
         document.body.classList.remove('connecting');
         pointerState = null;
@@ -1003,7 +1005,7 @@ function connectHandleStart(groupId, event) {
     previewLine.setAttribute("style", "stroke:#254468;stroke-width:1.5px;stroke-dasharray:5 3;pointer-events:none;");
     previewLine.setAttribute("id", "connect_preview");
     svg.appendChild(previewLine);
-    pointerState = { type: 'connect', originCircle: originCircle };
+    pointerState = { type: 'connect', originCircle: originCircle, startX: event.clientX, startY: event.clientY };
     document.body.classList.add('connecting');
 }
 
